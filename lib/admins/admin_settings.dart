@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'create_admin_page.dart';
 
 class AdminSettings extends StatefulWidget {
   const AdminSettings({super.key});
@@ -14,12 +15,7 @@ class _AdminSettingsState extends State<AdminSettings> {
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
 
-  // Yangi admin uchun controllerlar
-  final _newAdminUsernameController = TextEditingController();
-  final _newAdminPasswordController = TextEditingController();
-
   bool _isLoading = false;
-  bool _isCreatingAdmin = false;
   String? _initialUsername;
 
   // Xatolik holatlarini saqlash uchun
@@ -56,131 +52,6 @@ class _AdminSettingsState extends State<AdminSettings> {
         );
       }
     }
-  }
-
-  Future<void> _createNewAdmin() async {
-    if (_newAdminUsernameController.text.isEmpty ||
-        _newAdminPasswordController.text.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Username va parolni kiriting'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    setState(() => _isCreatingAdmin = true);
-
-    try {
-      final username = _newAdminUsernameController.text;
-      
-      // Username bandligini tekshirish
-      final existingUser = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isEqualTo: username)
-          .get();
-
-      if (existingUser.docs.isNotEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bu username band'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // Yangi admin qo'shish - username ni document ID sifatida ishlatish
-      await FirebaseFirestore.instance.collection('users').doc(username).set({
-        'username': username,
-        'password': _newAdminPasswordController.text,
-        'user_type': 'assistant',
-        'case': 'yes',
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Yangi asistent muvaffaqiyatli qo\'shildi'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Maydonlarni tozalash
-        _newAdminUsernameController.clear();
-        _newAdminPasswordController.clear();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Xatolik yuz berdi: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-
-    setState(() => _isCreatingAdmin = false);
-  }
-
-  void _showCreateAdminDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yangi admin yaratish'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _newAdminUsernameController,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _newAdminPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Parol',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Bekor qilish'),
-          ),
-          ElevatedButton(
-            onPressed: _isCreatingAdmin ? null : _createNewAdmin,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF512D84),
-              foregroundColor: Colors.white,
-            ),
-            child: _isCreatingAdmin
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text('Yaratish'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _updateAdminData() async {
@@ -261,7 +132,7 @@ class _AdminSettingsState extends State<AdminSettings> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Muvaffaqiyatli o\'zgartirildi'),
-              backgroundColor: Colors.green,
+              backgroundColor: Color.fromRGBO(236, 233, 76, 1),
             ),
           );
         }
@@ -298,99 +169,166 @@ class _AdminSettingsState extends State<AdminSettings> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Admin ma\'lumotlari',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF512D84),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF8F0FF), Color(0xFFF0F7FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF512D84).withOpacity(0.1),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF512D84).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.admin_panel_settings,
+                            color: Color(0xFF512D84),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text(
+                          'Admin ma\'lumotlari',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF512D84),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Username',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.person),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Iltimos, username kiriting';
+                        }
+                        if (value.length < 4 || value.length > 20) {
+                          return 'Username 4-20 ta belgidan iborat bo\'lishi kerak';
+                        }
+                        if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                          return 'Username faqat harflar, raqamlar va _ belgisidan iborat bo\'lishi mumkin';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Iltimos, username kiriting';
-                  }
-                  // Username uzunligi 4-20 orasida bo'lishi kerak
-                  if (value.length < 4 || value.length > 20) {
-                    return 'Username 4-20 ta belgidan iborat bo\'lishi kerak';
-                  }
-                  // Faqat harflar, raqamlar va _ belgisiga ruxsat berish
-                  if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
-                    return 'Username faqat harflar, raqamlar va _ belgisidan iborat bo\'lishi mumkin';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Parolni o\'zgartirish',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF512D84),
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _oldPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Joriy parol',
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: _isOldPasswordError ? Colors.red : Colors.grey,
-                    ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF8F0FF), Color(0xFFF0F7FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: _isOldPasswordError ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: _isOldPasswordError
-                          ? Colors.red
-                          : const Color(0xFF512D84),
-                    ),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.lock,
-                    color: _isOldPasswordError ? Colors.red : null,
-                  ),
-                  labelStyle: TextStyle(
-                    color: _isOldPasswordError ? Colors.red : null,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF512D84).withOpacity(0.1),
                   ),
                 ),
-                onChanged: (value) {
-                  if (_isOldPasswordError) {
-                    setState(() {
-                      _isOldPasswordError = false;
-                    });
-                  }
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Joriy parolni kiriting';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _newPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Yangi parol',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock_outline),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF512D84).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            color: Color(0xFF512D84),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text(
+                          'Parolni o\'zgartirish',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF512D84),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _oldPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Joriy parol',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color:
+                                _isOldPasswordError ? Colors.red : Colors.grey,
+                          ),
+                        ),
+                        prefixIcon: Icon(
+                          Icons.lock,
+                          color: _isOldPasswordError ? Colors.red : null,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      onChanged: (value) {
+                        if (_isOldPasswordError) {
+                          setState(() {
+                            _isOldPasswordError = false;
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Joriy parolni kiriting';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Yangi parol',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 32),
@@ -404,6 +342,9 @@ class _AdminSettingsState extends State<AdminSettings> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF512D84),
                           foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
@@ -412,7 +353,10 @@ class _AdminSettingsState extends State<AdminSettings> {
                               )
                             : const Text(
                                 'Saqlash',
-                                style: TextStyle(fontSize: 16),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                       ),
                     ),
@@ -424,15 +368,28 @@ class _AdminSettingsState extends State<AdminSettings> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: _showCreateAdminDialog,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateAdminPage(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color.fromRGBO(236, 233, 76, 1),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   icon: const Icon(Icons.person_add),
                   label: const Text(
-                    'Yangi admin tayinlash',
-                    style: TextStyle(fontSize: 16),
+                    'Yangi Admin Qo\'shish',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -448,8 +405,6 @@ class _AdminSettingsState extends State<AdminSettings> {
     _nameController.dispose();
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
-    _newAdminUsernameController.dispose();
-    _newAdminPasswordController.dispose();
     super.dispose();
   }
 }

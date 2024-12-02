@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:teamx_uz_web_app/admins/admin_settings.dart';
 import 'package:teamx_uz_web_app/admins/students_page.dart';
+import 'package:teamx_uz_web_app/admins/payments_page.dart';
+import 'package:teamx_uz_web_app/admins/groups_page.dart';
 
 final TextEditingController _usernameController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
@@ -410,15 +412,49 @@ class _AdminPageState extends State<AdminPage> {
             isSelected: false,
             isSmallScreen: !isDrawer && isSmallScreen,
             onTap: () {
+              if (isSmallScreen) {
+                Navigator.pop(context); // Drawer'ni yopish
+              }
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const StudentsPage(),
                 ),
               );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.payment,
+            title: 'To\'lovlar',
+            isSelected: false,
+            isSmallScreen: !isDrawer && isSmallScreen,
+            onTap: () {
               if (isSmallScreen) {
                 Navigator.pop(context); // Drawer'ni yopish
               }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PaymentsPage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.group,
+            title: 'Guruhlar',
+            isSelected: false,
+            isSmallScreen: !isDrawer && isSmallScreen,
+            onTap: () {
+              if (isSmallScreen) {
+                Navigator.pop(context); // Drawer'ni yopish
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GroupsPage(),
+                ),
+              );
             },
           ),
           _buildMenuItem(
