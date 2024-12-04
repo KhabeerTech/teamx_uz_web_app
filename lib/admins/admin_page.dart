@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:teamx_uz_web_app/admins/admin_settings.dart';
 import 'package:teamx_uz_web_app/admins/students_page.dart';
 import 'package:teamx_uz_web_app/admins/payments_page.dart';
-import 'package:teamx_uz_web_app/admins/groups_page.dart';
+import 'package:teamx_uz_web_app/admins/add_course_page.dart';
 
 final TextEditingController _usernameController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
@@ -441,8 +441,8 @@ class _AdminPageState extends State<AdminPage> {
             },
           ),
           _buildMenuItem(
-            icon: Icons.group,
-            title: 'Guruhlar',
+            icon: Icons.add_circle,
+            title: 'Kurs qo\'shish',
             isSelected: false,
             isSmallScreen: !isDrawer && isSmallScreen,
             onTap: () {
@@ -452,7 +452,7 @@ class _AdminPageState extends State<AdminPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const GroupsPage(),
+                  builder: (context) => const AddCoursePage(),
                 ),
               );
             },
