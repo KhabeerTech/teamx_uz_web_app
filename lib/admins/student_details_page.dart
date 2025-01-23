@@ -266,6 +266,39 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
     );
   }
 
+  Future<void> _approveStudent() async {
+    try {
+      print('DEBUG: Approving student ${widget.studentId}');
+      print('DEBUG: Current data: ${widget.userData}');
+
+      await _firestore.collection('users').doc(widget.studentId).update({
+        'is_approved': true,
+        'case': 'yes',
+        'team_lead_username': null,  // Agar oldin biriktirilgan bo'lsa, tozalaymiz
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('O\'quvchi tasdiqlandi'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Sahifani yangilash
+      Navigator.pop(context);
+    } catch (e) {
+      print('DEBUG: Error while approving student: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Xatolik yuz berdi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildTextField(
       TextEditingController controller, String label, bool isSmallScreen,
       {bool isNumber = false}) {
@@ -412,9 +445,9 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'O\'quvchi ma\'lumotlari',
-          style: TextStyle(
+        title: Text(
+          widget.userData['full_name'] ?? 'O\'quvchi ma\'lumotlari',
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -422,11 +455,32 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
         ),
         backgroundColor: const Color(0xFF512D84),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          // Tasdiqlash tugmasi
+          if (!(widget.userData['is_approved'] ?? false))
+            IconButton(
+              icon: const Icon(Icons.check_circle_outline),
+              onPressed: _approveStudent,
+              tooltip: 'O\'quvchini tasdiqlash',
+            ),
+          // Tahrirlash tugmasi
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _editUserData(widget.studentId),
+            tooltip: 'Tahrirlash',
+          ),
+          // O'chirish tugmasi
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => _confirmDeleteUser(widget.studentId),
+            tooltip: 'O\'chirish',
+          ),
+        ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: _firestore
             .collection('users')
-            .doc(widget.userData['username'])
+            .doc(widget.studentId)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -813,7 +867,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _editUserData(userData['username']),
+                        onPressed: () => _editUserData(widget.studentId),
                         icon: const Icon(Icons.edit, color: Color(0xFF512D84)),
                         label: const Text(
                           'Tahrirlash',
@@ -833,7 +887,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () =>
-                            _confirmDeleteUser(userData['username']),
+                            _confirmDeleteUser(widget.studentId),
                         icon: const Icon(Icons.delete, color: Colors.white),
                         label: const Text(
                           'O\'chirish',

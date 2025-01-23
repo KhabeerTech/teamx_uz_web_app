@@ -2,10 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:teamx_uz_web_app/pages/student_page.dart';
 import 'package:teamx_uz_web_app/pages/signup.dart';
 import 'package:teamx_uz_web_app/admins/admin_page.dart';
-// import 'package:teamx_uz_web_app/pages/personal_cabinet_page.dart';
+import 'package:teamx_uz_web_app/team_leads/team_lead_home_page.dart';
+import 'package:teamx_uz_web_app/pages/sing_In_wait.dart';
 
 final TextEditingController _usernameController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
@@ -67,7 +69,71 @@ class _SignIn_usernameState extends State<SignIn_username>
 
       if (!mounted) return;
 
-      if (!userDoc.exists) {
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        print('User Data: $userData'); // Debug
+
+        if (userData['password'] == _passwordController.text) {
+          print('Password matched'); // Debug
+          print('User Type: ${userData['role']}'); // Debug
+
+          if (userData['role'] == 'team_lead') {
+            print('User is team lead'); // Debug
+            
+            if (userData['is_approved'] != true) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sizning hisobingiz hali admin tomonidan tasdiqlanmagan!'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              setState(() {
+                _isLoading = false;
+              });
+              return;
+            }
+            
+            // Team Lead uchun
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TeamLeadHomePage(
+                  username: _usernameController.text,
+                ),
+              ),
+            );
+          } else if (userData['user_type'] == 'admin' ||
+              userData['user_type'] == 'assistant') {
+            print('User is admin/assistant'); // Debug
+            // Admin uchun
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminPage(),
+              ),
+            );
+          } else {
+            // Student uchun
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentPage(
+                  username: _usernameController.text,
+                ),
+              ),
+            );
+          }
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Parol noto\'g\'ri!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Bunday foydalanuvchi topilmadi'),
@@ -79,98 +145,6 @@ class _SignIn_usernameState extends State<SignIn_username>
           _isLoading = false;
         });
         return;
-      }
-
-      final userData = userDoc.data() as Map<String, dynamic>;
-
-      // Username va parolni tekshirish
-      if (userData['username'] == _usernameController.text &&
-          userData['password'] == _passwordController.text) {
-        // Case mavjudligini va qiymatini tekshirish
-        if (!userData.containsKey('case')) {
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Sizning hisobingizda muammo bor. Administrator bilan bog\'laning.'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-          return;
-        }
-
-        // Case qiymatini tekshirish
-        if (userData['case'] != 'yes') {
-          setState(() {
-            _isLoading = false;
-          });
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text(
-                  'Hozir kirish mumkin emas',
-                  style: TextStyle(color: Color(0xFF512D84)),
-                ),
-                content: const Text(
-                  'Iltimos, admin tasdiqlashini kuting.',
-                  style: TextStyle(fontSize: 16),
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(color: Color(0xFF512D84)),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-          return;
-        }
-
-        // Muvaffaqiyatli kirish
-        if (!mounted) return;
-
-        // User type tekshirish
-        if (userData['user_type'] == 'admin' ||
-            userData['user_type'] == 'assistant') {
-          // Admin page ga o'tish
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminPage(),
-            ),
-          );
-        } else {
-          // Student page ga o'tish
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => StudentPage(
-                username: _usernameController.text,
-              ),
-            ),
-          );
-        }
-      } else {
-        // Noto'g'ri parol
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Username yoki parol noto\'g\'ri'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
       }
     } catch (e) {
       print("Firestore xatosi: $e"); // Debug uchun

@@ -417,58 +417,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF512D84)),
                 ),
-              )
-            else if (_existingCourses.isNotEmpty) ...[
-              const Text(
-                'Mavjud kurslar:',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF512D84),
-                ),
               ),
-              const SizedBox(height: 10),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _existingCourses.length,
-                itemBuilder: (context, index) {
-                  final course = _existingCourses[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(_getCourseTypeText(course)),
-                      subtitle: Text(
-                        'Yaratilgan vaqti: ${course['created_at']}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: course['active'] == true
-                          ? const Chip(
-                              label: Text('Faol'),
-                              backgroundColor: Colors.green,
-                              labelStyle: TextStyle(color: Colors.white),
-                            )
-                          : const Chip(
-                              label: Text('Nofaol'),
-                              backgroundColor: Colors.red,
-                              labelStyle: TextStyle(color: Colors.white),
-                            ),
-                    ),
-                  );
-                },
-              ),
-              const Divider(thickness: 2),
-            ],
-            const SizedBox(height: 20),
-            const Text(
-              'Yangi kurs qo\'shish:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF512D84),
-              ),
-            ),
-            const SizedBox(height: 10),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),

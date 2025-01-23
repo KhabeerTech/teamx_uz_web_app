@@ -118,6 +118,8 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
         'city': _cityController.text,
         'branch': _branchController.text,
         'created_at': FieldValue.serverTimestamp(),
+        'role': 'student',  // O'quvchi roli
+        'is_approved': false,  // Yangi o'quvchilar tasdiqlash kutishadi
         'case': 'no', // Har bir yangi foydalanuvchi uchun case="no"
       }, SetOptions(merge: true));
 

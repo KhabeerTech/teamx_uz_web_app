@@ -5,6 +5,7 @@ import 'package:teamx_uz_web_app/admins/admin_settings.dart';
 import 'package:teamx_uz_web_app/admins/students_page.dart';
 import 'package:teamx_uz_web_app/admins/payments_page.dart';
 import 'package:teamx_uz_web_app/admins/add_course_page.dart';
+import 'package:teamx_uz_web_app/admins/team_lead_page.dart';
 
 final TextEditingController _usernameController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
@@ -39,14 +40,38 @@ class _AdminPageState extends State<AdminPage> {
 
   Future<void> _updateUserCase(String username, String newCase) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(username)
-          .update({'case': newCase});
+      await _firestore.collection('users').doc(username).update({
+        'case': newCase,
+        'is_approved': newCase == 'yes' ? true : false,  
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Foydalanuvchi $username muvaffaqiyatli yangilandi'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Xatolik yuz berdi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _approveStudent(String username) async {
+    try {
+      await _firestore.collection('users').doc(username).update({
+        'is_approved': true,
+        'case': 'yes',
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('O\'quvchi $username tasdiqlandi'),
           backgroundColor: Colors.green,
         ),
       );
@@ -453,6 +478,23 @@ class _AdminPageState extends State<AdminPage> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AddCoursePage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.supervisor_account,
+            title: 'Team Lead',
+            isSelected: false,
+            isSmallScreen: !isDrawer && isSmallScreen,
+            onTap: () {
+              if (isSmallScreen) {
+                Navigator.pop(context); // Drawer'ni yopish
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TeamLeadPage(),
                 ),
               );
             },
