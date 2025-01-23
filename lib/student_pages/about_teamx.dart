@@ -12,10 +12,13 @@ class _AboutTeamXPageState extends State<AboutTeamXPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('teamX haqida'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title:
+            const Text('teamX haqida', style: TextStyle(color: Colors.white)),
       ),
       body: const Center(
-        child: Text('teamX haqida sahifasi'),
+        child: Text('teamX haqida sahifasi',
+            style: TextStyle(color: Colors.black)),
       ),
     );
   }

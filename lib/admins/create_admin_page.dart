@@ -99,7 +99,8 @@ class _CreateAdminPageState extends State<CreateAdminPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF512D84),
-        title: const Text('Yangi Admin Yaratish'),
+        title: const Text('Yangi Admin Yaratish',
+            style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(

@@ -25,6 +25,7 @@ class SignUpNext extends StatefulWidget {
 }
 
 class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final _formKey = GlobalKey<FormState>();
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -40,6 +41,9 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
   int _selectedAge = 13;
   int? _selectedGrade = 10;
   List<int> grades = [6, 7, 8, 9, 10, 11];
+  String? _selectedRegion; // Qo'shildi
+  List<String> _regions = []; // Qo'shildi
+  bool _isLoading = false;
 
   void _showDialog(Widget child) {
     showCupertinoModalPopup<void>(
@@ -91,6 +95,23 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
         _controller.forward();
       });
     });
+
+    _loadRegions(); // Qo'shildi
+  }
+
+  // Regionlarni yuklash funksiyasi
+  Future<void> _loadRegions() async {
+    try {
+      final QuerySnapshot regionsSnapshot =
+          await _firestore.collection('regions').get();
+      setState(() {
+        _regions =
+            regionsSnapshot.docs.map((doc) => doc['name'] as String).toList();
+        _regions.sort(); // Alifbo tartibida saralash
+      });
+    } catch (e) {
+      print('Error loading regions: $e');
+    }
   }
 
   @override
@@ -100,6 +121,21 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
   }
 
   Future<void> _saveUserData() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedRegion == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Iltimos, filial joyini tanlang'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       // Ma'lumotlarni Firestore'ga saqlash
       final userDoc =
@@ -107,6 +143,7 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
 
       await userDoc.set({
         'username': widget.username,
+        'age': _selectedAge,
         'full_name': widget.fullName,
         'password': widget
             .password, // ESLATMA: Parolni xavfsiz saqlash uchun hash qilish kerak
@@ -114,12 +151,10 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
         'grade': _selectedGrade,
         'father_phone': _phoneFatherController.text,
         'mother_phone': _phoneMotherController.text,
-        'region': _regionController.text,
-        'city': _cityController.text,
-        'branch': _branchController.text,
+        'region': _selectedRegion, // O'zgartirildi
         'created_at': FieldValue.serverTimestamp(),
-        'role': 'student',  // O'quvchi roli
-        'is_approved': false,  // Yangi o'quvchilar tasdiqlash kutishadi
+        'role': 'student', // O'quvchi roli
+        'is_approved': false, // Yangi o'quvchilar tasdiqlash kutishadi
         'case': 'no', // Har bir yangi foydalanuvchi uchun case="no"
       }, SetOptions(merge: true));
 
@@ -156,6 +191,10 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
           ),
         ),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -569,42 +608,29 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
                     },
                   ),
                   SizedBox(height: paddingValue),
-                  TextFormField(
-                    controller: _regionController,
-                    decoration: inputDecoration("Qishloq/Tuman"),
-                    style: const TextStyle(color: Color(0xFF512D84)),
+                  DropdownButtonFormField<String>(
+                    // TextField o'rniga DropdownButtonFormField
+                    value: _selectedRegion,
+                    decoration: inputDecoration('Filial joyi'),
+                    items: _regions.map((region) {
+                      return DropdownMenuItem(
+                        value: region,
+                        child: Text(region),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedRegion = value;
+                      });
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return "Qishloq/Tumaningizni kiriting";
+                        return 'Iltimos, filial joyini tanlang';
                       }
                       return null;
                     },
                   ),
-                  SizedBox(height: paddingValue),
-                  TextFormField(
-                    controller: _cityController,
-                    decoration: inputDecoration("Shahar/Viloyat"),
-                    style: const TextStyle(color: Color(0xFF512D84)),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Shahar/Viloyatningizni kiriting";
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: paddingValue),
-                  TextFormField(
-                    controller: _branchController,
-                    decoration: inputDecoration("Filial"),
-                    style: const TextStyle(color: Color(0xFF512D84)),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Filialni kiriting";
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: screenHeight * 0.07),
+                  SizedBox(height: screenHeight * 0.1),
                   ElevatedButton(
                     onPressed: validateAllFields,
                     style: ElevatedButton.styleFrom(
@@ -617,16 +643,21 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const FittedBox(
-                      child: Text(
-                        "Keyingi",
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        softWrap: false,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                        : const FittedBox(
+                            child: Text(
+                              "Keyingi",
+                              style: TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              softWrap: false,
+                            ),
+                          ),
                   ),
                   SizedBox(height: screenHeight * 0.01),
                 ]),

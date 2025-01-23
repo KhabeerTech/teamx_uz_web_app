@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'team_lead_students_page.dart';
 import 'team_lead_profile_page.dart';
+import 'package:teamx_uz_web_app/team_leads/my_students_page.dart';
 
 class TeamLeadHomePage extends StatefulWidget {
-  final String username;
+  final Map<String, dynamic> userData;
 
-  const TeamLeadHomePage({Key? key, required this.username}) : super(key: key);
+  const TeamLeadHomePage({Key? key, required this.userData}) : super(key: key);
 
   @override
   _TeamLeadHomePageState createState() => _TeamLeadHomePageState();
@@ -21,7 +22,7 @@ class _TeamLeadHomePageState extends State<TeamLeadHomePage> {
     super.initState();
     _teamLeadStream = FirebaseFirestore.instance
         .collection('users')
-        .doc(widget.username)
+        .doc(widget.userData['username'])
         .snapshots();
   }
 
@@ -31,63 +32,63 @@ class _TeamLeadHomePageState extends State<TeamLeadHomePage> {
       stream: _teamLeadStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Scaffold(
-            body: Center(
-              child: Text('Xatolik yuz berdi'),
-            ),
+          return const Center(
+            child: Text('Xatolik yuz berdi'),
           );
         }
 
         if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+          return const Center(
+            child: CircularProgressIndicator(),
           );
         }
 
         final teamLeadData = snapshot.data!.data() as Map<String, dynamic>;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('Team Lead - ${teamLeadData['full_name']}'),
-            backgroundColor: const Color(0xFF512DA8),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () {
-                  // TODO: Implement logout
-                  Navigator.of(context).pushReplacementNamed('/');
-                },
+        return Column(
+          children: [
+            // Body
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  TeamLeadStudentsPage(
+                    username: widget.userData['username'],
+                    userData: widget.userData,
+                  ),
+                  MyStudentsPage(
+                    username: widget.userData['username'],
+                    userData: widget.userData,
+                  ),
+                  TeamLeadProfilePage(username: widget.userData['username']),
+                ],
               ),
-            ],
-          ),
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              TeamLeadStudentsPage(username: widget.username),
-              TeamLeadProfilePage(username: widget.username),
-            ],
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            selectedItemColor: const Color(0xFF512DA8),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.people),
-                label: 'O\'quvchilar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profil',
-              ),
-            ],
-            onTap: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-          ),
+            ),
+            // Bottom Navigation
+            BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              selectedItemColor: const Color(0xFF512DA8),
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people),
+                  label: 'O\'quvchilar',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.school),
+                  label: 'Mening O\'quvchilarim',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profil',
+                ),
+              ],
+              onTap: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+            ),
+          ],
         );
       },
     );

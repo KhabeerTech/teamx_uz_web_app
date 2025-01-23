@@ -22,6 +22,7 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
   List<Map<String, dynamic>> assignedStudents = [];
   List<Map<String, dynamic>> students = [];
   bool _isLoading = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -31,7 +32,7 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
   }
 
   Future<void> _loadAssignedStudents() async {
-    final snapshot = await FirebaseFirestore.instance
+    final snapshot = await _firestore
         .collection('users')
         .where('team_lead_username', isEqualTo: widget.teamLead['username'])
         .get();
@@ -46,34 +47,55 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
     try {
       print('DEBUG: Starting to load students...');
 
-      // Faqat case=yes bo'lgan o'quvchilarni olamiz
-      final approvedSnapshot = await FirebaseFirestore.instance
+      // Team Lead regionini olish
+      final teamLeadDoc = await _firestore
+          .collection('users')
+          .doc(widget.teamLead['username'])
+          .get();
+      final teamLeadData = teamLeadDoc.data() as Map<String, dynamic>;
+      final teamLeadRegion = teamLeadData['region'] as String?;
+
+      if (teamLeadRegion == null) {
+        print('Team Lead regioni topilmadi');
+        return;
+      }
+
+      // O'quvchilarni olish
+      final approvedSnapshot = await _firestore
           .collection('users')
           .where('role', isEqualTo: 'student')
           .where('case', isEqualTo: 'yes')
+          .where('region', isEqualTo: teamLeadRegion)
           .get();
 
       print('\nDEBUG: Found students:');
-      for (var doc in approvedSnapshot.docs) {
+      
+      // Faqat team_lead_username = null yoki umuman bo'lmagan o'quvchilarni filtrlash
+      final filteredDocs = approvedSnapshot.docs.where((doc) {
+        final data = doc.data();
+        return !data.containsKey('team_lead_username') || data['team_lead_username'] == null;
+      });
+
+      for (var doc in filteredDocs) {
         final data = doc.data();
         print('Student ${doc.id}:');
         print('- full_name: ${data['full_name']}');
         print('- case: ${data['case']}');
+        print('- region: ${data['region']}');
+        print('- team_lead_username: ${data['team_lead_username']}');
         print('-------------------');
       }
 
       if (!mounted) return;
 
-      final loadedStudents = approvedSnapshot.docs
-          .map((doc) {
-            final data = doc.data();
-            return {
-              'username': doc.id,
-              'full_name': data['full_name'] ?? 'Nomsiz',
-              'grade': data['grade'] ?? 'N/A',
-            };
-          })
-          .toList();
+      final loadedStudents = filteredDocs.map((doc) {
+        final data = doc.data();
+        return {
+          'username': doc.id,
+          'full_name': data['full_name'] ?? 'Nomsiz',
+          'grade': data['grade'] ?? 'N/A',
+        };
+      }).toList();
 
       setState(() {
         students = loadedStudents;
@@ -97,20 +119,18 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
 
   Future<void> _assignStudent(String studentUsername) async {
     try {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = _firestore.batch();
 
       // Team lead-ning students array-iga o'quvchini qo'shish
-      final teamLeadRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.teamLead['username']);
+      final teamLeadRef =
+          _firestore.collection('users').doc(widget.teamLead['username']);
 
       batch.update(teamLeadRef, {
         'students': FieldValue.arrayUnion([studentUsername])
       });
 
       // O'quvchining team_lead_username maydonini yangilash
-      final studentRef =
-          FirebaseFirestore.instance.collection('users').doc(studentUsername);
+      final studentRef = _firestore.collection('users').doc(studentUsername);
 
       batch.update(
           studentRef, {'team_lead_username': widget.teamLead['username']});
@@ -148,20 +168,18 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
 
   Future<void> _removeStudent(String studentUsername) async {
     try {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = _firestore.batch();
 
       // Team lead-ning students array-idan o'quvchini o'chirish
-      final teamLeadRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.teamLead['username']);
+      final teamLeadRef =
+          _firestore.collection('users').doc(widget.teamLead['username']);
 
       batch.update(teamLeadRef, {
         'students': FieldValue.arrayRemove([studentUsername])
       });
 
       // O'quvchining team_lead_username maydonini tozalash
-      final studentRef =
-          FirebaseFirestore.instance.collection('users').doc(studentUsername);
+      final studentRef = _firestore.collection('users').doc(studentUsername);
 
       batch.update(studentRef, {'team_lead_username': null});
 
@@ -211,7 +229,7 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
                   const Text('O\'chirish', style: TextStyle(color: Colors.red)),
               onPressed: () async {
                 try {
-                  await FirebaseFirestore.instance
+                  await _firestore
                       .collection('users')
                       .doc(widget.teamLead['username'])
                       .delete();
@@ -246,7 +264,7 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
   Future<void> _approveTeamLead() async {
     try {
       // Avval team lead ma'lumotlarini Firestore-dan yangilab olamiz
-      final teamLeadDoc = await FirebaseFirestore.instance
+      final teamLeadDoc = await _firestore
           .collection('users')
           .doc(widget.teamLead['username'])
           .get();
@@ -259,13 +277,13 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
       print(
           'Firestore-dan olingan team lead ma\'lumotlari: $teamLeadData'); // Debug
 
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = _firestore.batch();
       final teamLeadRef = teamLeadDoc.reference;
 
       // Team lead ma'lumotlarini yangilash
       batch.update(teamLeadRef, {
         'is_approved': true,
-        'case': 'yes',  // Case ni yes qilamiz
+        'case': 'yes', // Case ni yes qilamiz
       });
 
       await batch.commit();
@@ -278,7 +296,8 @@ class _TeamLeadDetailsPageState extends State<TeamLeadDetailsPage> {
 
       if (telegramId != null) {
         final botToken = '8107824219:AAHOgdNra07L0ZoxHoN8mNfNAAvo_r_9y8k';
-        final url = Uri.parse('https://api.telegram.org/bot$botToken/sendMessage');
+        final url =
+            Uri.parse('https://api.telegram.org/bot$botToken/sendMessage');
 
         final message = '''
 🎉 Tabriklaymiz ${teamLeadData['full_name']}!
@@ -313,7 +332,8 @@ Username: ${teamLeadData['username']}
 
           if (response.statusCode != 200) {
             print('ERROR: Telegram API error: ${response.body}');
-            throw Exception('Telegram xabar yuborishda xatolik: ${response.body}');
+            throw Exception(
+                'Telegram xabar yuborishda xatolik: ${response.body}');
           } else {
             print('SUCCESS: Telegram message sent successfully!');
           }
@@ -338,6 +358,63 @@ Username: ${teamLeadData['username']}
     } catch (e) {
       print('Error approving team lead: $e');
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Xatolik yuz berdi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteTeamLead() async {
+    // Tasdiqlash dialogi
+    bool confirm = await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Team Lead ni o\'chirish'),
+              content: const Text(
+                  'Haqiqatan ham bu Team Lead ni o\'chirmoqchimisiz?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Bekor qilish'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text(
+                    'O\'chirish',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (confirm) {
+      try {
+        // Team Lead ni o'chirish
+        await _firestore
+            .collection('users')
+            .doc(widget.teamLead['username'])
+            .delete();
+
+        if (!mounted) return;
+        // Asosiy sahifaga qaytish
+        Navigator.of(context).pop();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Team Lead muvaffaqiyatli o\'chirildi'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Xatolik yuz berdi: $e'),
@@ -494,7 +571,7 @@ Username: ${teamLeadData['username']}
       children: [
         // O'quvchilar ro'yxati
         StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
+          stream: _firestore
               .collection('users')
               .where('team_lead_username',
                   isEqualTo: widget.teamLead['username'])
@@ -538,7 +615,7 @@ Username: ${teamLeadData['username']}
           },
         ),
         const SizedBox(height: 20),
-        
+
         // Yangi o'quvchi qo'shish dropdown-i
         if (students.isEmpty)
           const Padding(
@@ -561,7 +638,8 @@ Username: ${teamLeadData['username']}
             }).toList(),
             onChanged: (String? username) {
               if (username != null) {
-                print('DEBUG: Selected student username: $username'); // Debug log
+                print(
+                    'DEBUG: Selected student username: $username'); // Debug log
                 _assignStudent(username);
                 setState(() => _selectedStudent = null);
               }
@@ -579,7 +657,9 @@ Username: ${teamLeadData['username']}
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Team Lead Details'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Team Lead Details',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF512DA8),
         actions: [
           if (!widget.isApproved)
@@ -612,6 +692,27 @@ Username: ${teamLeadData['username']}
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _deleteTeamLead,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text(
+            'Team Lead ni o\'chirish',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),

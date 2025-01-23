@@ -6,6 +6,8 @@ import '../student_pages/personal_cabinet.dart';
 import '../student_pages/my_courses.dart';
 import '../student_pages/about_academy.dart';
 import '../student_pages/about_teamx.dart';
+import '../student_pages/trial_steps_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StudentPage extends StatefulWidget {
   final String username;
@@ -26,6 +28,8 @@ class _StudentPageState extends State<StudentPage>
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _startAnimation = false;
+  String userStep = '1-qadam';
+  int userWarnings = 0;
 
   @override
   void initState() {
@@ -49,6 +53,29 @@ class _StudentPageState extends State<StudentPage>
         _controller.forward();
       });
     });
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.username)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          if (userDoc.data()?['steps'] != null) {
+            userStep = '${userDoc.data()?['steps']}-qadam';
+          }
+          if (userDoc.data()?['warned'] != null) {
+            userWarnings = userDoc.data()?['warned'];
+          }
+        });
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
   }
 
   @override
@@ -308,11 +335,63 @@ class _StudentPageState extends State<StudentPage>
                   ),
                   SizedBox(height: screenHeight * 0.02 * scale),
                   Padding(
-                    padding: EdgeInsets.all(padding *
-                        0.5), // Button container padding ni yanada kamaytirib qo'ydim
+                    padding: EdgeInsets.all(padding * 0.5),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        Container(
+                          width: screenWidth * 0.9,
+                          height:
+                              screenWidth <= 800 ? screenHeight * 0.12 : null,
+                          margin: EdgeInsets.only(
+                              bottom: screenWidth <= 800
+                                  ? screenHeight * 0.025
+                                  : screenHeight * 0.02),
+                          padding: EdgeInsets.all(screenWidth <= 800 ? 16 : 16),
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(239, 233, 233, 1),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: const Color.fromRGBO(81, 45, 132, 1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Qadamingiz: $userStep',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: textSize,
+                                    fontFamily: 'Nexa',
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF512D84),
+                                  ),
+                                ),
+                                SizedBox(height: screenWidth <= 800 ? 12 : 8),
+                                Text(
+                                  'Ogohlantirishlaringiz: $userWarnings',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: textSize,
+                                    fontFamily: 'Nexa',
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF512D84),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                            height: screenWidth <= 800
+                                ? screenHeight * 0.025
+                                : screenHeight * 0.02),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -324,20 +403,99 @@ class _StudentPageState extends State<StudentPage>
                               ),
                             );
                           },
-                          child: _buildButton('Shaxsiy kabinetim', textSize,
-                              screenWidth * 0.9, buttonHeight * scale),
+                          child: Container(
+                            width: screenWidth * 0.9,
+                            height: screenWidth <= 800
+                                ? screenHeight * 0.07
+                                : buttonHeight * scale,
+                            margin: EdgeInsets.only(
+                                bottom: screenWidth <= 800
+                                    ? screenHeight * 0.025
+                                    : 16),
+                            decoration: BoxDecoration(
+                              color: const Color.fromRGBO(239, 233, 233, 1),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: const Color.fromRGBO(81, 45, 132, 1),
+                                width: 1,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Shaxsiy kabinetim',
+                                style: TextStyle(
+                                  fontSize: textSize,
+                                  fontFamily: 'Nexa',
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF512D84),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MyCoursesPage(),
-                              ),
-                            );
+                          onTap: () async {
+                            // Userning ma'lumotlarini olish
+                            final userDoc = await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(widget.username)
+                                .get();
+
+                            if (!mounted) return;
+
+                            if (userDoc.exists) {
+                              final userData = userDoc.data() as Map<String, dynamic>;
+
+                              // 3daystest true bo'lsa TrialStepsPage ga o'tish
+                              if (userData['3daystest'] == true) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const TrialStepsPage(),
+                                  ),
+                                );
+                              } else {
+                                // Aks holda MyCoursesPage ga o'tish
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MyCoursesPage(
+                                      username: widget.username,
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
                           },
-                          child: _buildButton('Kurslarim', textSize + 2,
-                              screenWidth * 0.9, buttonHeight * scale),
+                          child: Container(
+                            width: screenWidth * 0.9,
+                            height: screenWidth <= 800
+                                ? screenHeight * 0.07
+                                : buttonHeight * scale,
+                            margin: EdgeInsets.only(
+                                bottom: screenWidth <= 800
+                                    ? screenHeight * 0.025
+                                    : 16),
+                            decoration: BoxDecoration(
+                              color: const Color.fromRGBO(239, 233, 233, 1),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: const Color.fromRGBO(81, 45, 132, 1),
+                                width: 1,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Qadamlarim',
+                                style: TextStyle(
+                                  fontSize: textSize + 2,
+                                  fontFamily: 'Nexa',
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF512D84),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                         GestureDetector(
                           onTap: () {
@@ -348,38 +506,35 @@ class _StudentPageState extends State<StudentPage>
                               ),
                             );
                           },
-                          child: _buildButton('Akademiya haqida', textSize,
-                              screenWidth * 0.9, buttonHeight * scale),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AboutAcademyPage(),
+                          child: Container(
+                            width: screenWidth * 0.9,
+                            height: screenWidth <= 800
+                                ? screenHeight * 0.07
+                                : buttonHeight * scale,
+                            margin: EdgeInsets.only(
+                                bottom: screenWidth <= 800
+                                    ? screenHeight * 0.025
+                                    : 16),
+                            decoration: BoxDecoration(
+                              color: const Color.fromRGBO(239, 233, 233, 1),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: const Color.fromRGBO(81, 45, 132, 1),
+                                width: 1,
                               ),
-                            );
-                          },
-                          child: _buildButton(
-                              'Akademiya va filiallar',
-                              textSize,
-                              screenWidth * 0.9,
-                              buttonHeight * scale),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AboutTeamXPage(),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Akademiya haqida',
+                                style: TextStyle(
+                                  fontSize: textSize,
+                                  fontFamily: 'Nexa',
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF512D84),
+                                ),
                               ),
-                            );
-                          },
-                          child: _buildButton(
-                              'teamX - nima?  -  teamX kim?',
-                              textSize,
-                              screenWidth * 0.9,
-                              buttonHeight * scale * 1.4),
+                            ),
+                          ),
                         ),
                       ],
                     ),

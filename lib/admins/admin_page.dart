@@ -4,8 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:teamx_uz_web_app/admins/admin_settings.dart';
 import 'package:teamx_uz_web_app/admins/students_page.dart';
 import 'package:teamx_uz_web_app/admins/payments_page.dart';
-import 'package:teamx_uz_web_app/admins/add_course_page.dart';
+import 'package:teamx_uz_web_app/admins/course_details_page.dart';
 import 'package:teamx_uz_web_app/admins/team_lead_page.dart';
+import 'package:teamx_uz_web_app/admins/regions_page.dart';
+import 'package:teamx_uz_web_app/admins/head_teachers_page.dart';
 
 final TextEditingController _usernameController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
@@ -37,12 +39,21 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _startDateController = TextEditingController();
+  Map<String, bool> _selectedDays = {
+    'dushanba': false,
+    'seshanba': false,
+    'chorshanba': false,
+    'payshanba': false,
+    'juma': false,
+    'shanba': false,
+  };
 
   Future<void> _updateUserCase(String username, String newCase) async {
     try {
       await _firestore.collection('users').doc(username).update({
         'case': newCase,
-        'is_approved': newCase == 'yes' ? true : false,  
+        'is_approved': newCase == 'yes' ? true : false,
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -305,6 +316,266 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  Future<bool> _showWeekDaysDialog(String username) async {
+    int selectedCount = 0;
+    Map<String, bool> tempSelectedDays = Map.from(_selectedDays);
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Hafta kunlarini tanlang'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ..._selectedDays.keys.map((day) {
+                    return CheckboxListTile(
+                      title: Text(day),
+                      value: tempSelectedDays[day],
+                      onChanged: (bool? value) {
+                        if (value == true && selectedCount >= 3) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Faqat 3 ta kun tanlash mumkin'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        setState(() {
+                          tempSelectedDays[day] = value ?? false;
+                          selectedCount = tempSelectedDays.values
+                              .where((selected) => selected)
+                              .length;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Bekor qilish'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF512DA8),
+                  ),
+                  onPressed: selectedCount == 3
+                      ? () {
+                          _selectedDays = Map.from(tempSelectedDays);
+                          Navigator.pop(context, true);
+                        }
+                      : null,
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<bool> _showStartDateDialog(String username) async {
+    _startDateController.clear();
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Boshlangan sanani kiriting'),
+        content: TextField(
+          controller: _startDateController,
+          decoration: const InputDecoration(
+            labelText: 'Sana (dd.MM.yyyy)',
+            hintText: '14.01.2025',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Bekor qilish'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF512DA8),
+            ),
+            onPressed: () {
+              final dateStr = _startDateController.text.trim();
+              if (!_isValidDateFormat(dateStr)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Sana formati noto\'g\'ri! dd.MM.yyyy formatida kiriting'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, true);
+            },
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  bool _isValidDateFormat(String date) {
+    if (!RegExp(r'^\d{2}\.\d{2}\.\d{4}$').hasMatch(date)) return false;
+
+    try {
+      final parts = date.split('.');
+      final day = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final year = int.parse(parts[2]);
+
+      if (year < 2024 || year > 2100) return false;
+      if (month < 1 || month > 12) return false;
+      if (day < 1 || day > 31) return false;
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> _confirmStudent(String username) async {
+    try {
+      // 1. Hafta kunlarini tanlash
+      final daysSelected = await _showWeekDaysDialog(username);
+      if (!daysSelected) return;
+
+      // 2. Boshlangan sanani kiritish
+      final dateEntered = await _showStartDateDialog(username);
+      if (!dateEntered) return;
+
+      // 3. Username bo'yicha userni topish
+      final userQuery = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foydalanuvchi topilmadi'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // 4. Avval kelish kunlari va sanani saqlash
+      final selectedDays = _selectedDays.entries
+          .where((entry) => entry.value)
+          .map((entry) => entry.key)
+          .toList();
+
+      await _firestore.collection('users').doc(userQuery.docs.first.id).update({
+        'start_date': _startDateController.text.trim(),
+        'attendance_days': selectedDays,
+      });
+
+      // 5. Keyin statuslarni o'zgartirish
+      await _firestore.collection('users').doc(userQuery.docs.first.id).update({
+        'case': 'yes',
+        '3daystest': false,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('O\'quvchi tasdiqlandi'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Xatolik yuz berdi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _approveStudentDialog(String username, String docId) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('3 kunlik sinov'),
+        content: const Text('Bu o\'quvchi 3 kunlik sinovdami?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, false);
+            },
+            child: const Text('Yo\'q'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, true);
+            },
+            child: const Text('Ha'),
+          ),
+        ],
+      ),
+    ).then((isTrialStudent) async {
+      if (isTrialStudent == null) return;
+
+      if (!isTrialStudent) {
+        // Yo'q bosilganda - oldingi funksiyalar davom etadi
+        _confirmStudent(username);
+      } else {
+        // Ha bosilganda - dialog yopiladi
+        try {
+          // To'g'ridan-to'g'ri docId bo'yicha update qilamiz
+          await _firestore
+              .collection('users')
+              .doc(docId)
+              .update({'3daystest': true});
+
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('3 kunlik sinov belgilandi'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } catch (e) {
+          print('DEBUG: Xatolik: $e');
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Xatolik yuz berdi: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    });
+  }
+
   Widget _buildTextField(
       TextEditingController controller, String label, bool isSmallScreen,
       {bool isNumber = false}) {
@@ -477,7 +748,7 @@ class _AdminPageState extends State<AdminPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const AddCoursePage(),
+                  builder: (context) => const CourseDetailsPage(),
                 ),
               );
             },
@@ -500,26 +771,51 @@ class _AdminPageState extends State<AdminPage> {
             },
           ),
           _buildMenuItem(
+            icon: Icons.location_city,
+            title: 'Regionlar',
+            isSelected: false,
+            isSmallScreen: !isDrawer && isSmallScreen,
+            onTap: () {
+              if (isSmallScreen) {
+                Navigator.pop(context); // Drawer'ni yopish
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RegionsPage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.school,
+            title: 'Head Teacherlar', // O'zgartirildi
+            isSelected: false,
+            isSmallScreen: !isDrawer && isSmallScreen,
+            onTap: () {
+              if (isSmallScreen) {
+                Navigator.pop(context); // Drawer'ni yopish
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const HeadTeachersPage(), // O'zgartirildi
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
             icon: Icons.settings,
             title: 'Sozlamalar',
             isSelected: false,
             isSmallScreen: !isDrawer && isSmallScreen,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AdminSettings(),
-                ),
-              );
-              if (isSmallScreen) {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => const AdminSettings(),
-                //   ),
-                // ); // Drawer'ni yopish
-              }
-            },
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminSettings(),
+              ),
+            ),
           ),
           const Spacer(),
           _buildMenuItem(
@@ -538,7 +834,8 @@ class _AdminPageState extends State<AdminPage> {
       appBar: isSmallScreen
           ? AppBar(
               backgroundColor: const Color(0xFF512D84),
-              title: const Text('TeamX Admin'),
+              title: const Text('TeamX Admin',
+                  style: TextStyle(color: Colors.white)),
               iconTheme: const IconThemeData(color: Colors.white),
             )
           : null,
@@ -594,7 +891,10 @@ class _AdminPageState extends State<AdminPage> {
                   // Main content with StreamBuilder
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: _firestore.collection('users').snapshots(),
+                      stream: _firestore
+                          .collection('users')
+                          .where('role', isEqualTo: 'student')
+                          .snapshots(),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
                           return Center(
@@ -696,6 +996,9 @@ class _AdminPageState extends State<AdminPage> {
 
                                         return Container(
                                           decoration: BoxDecoration(
+                                            color: data['3daystest'] == true
+                                                ? Colors.yellow[100]
+                                                : null,
                                             border: Border(
                                               bottom: BorderSide(
                                                 color: Colors.grey
@@ -738,29 +1041,52 @@ class _AdminPageState extends State<AdminPage> {
                                                     vertical: 6,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: userCase == 'yes'
-                                                        ? Colors.green
+                                                    color: data['3daystest'] ==
+                                                            true
+                                                        ? const Color(
+                                                                0xFF512D84)
                                                             .withOpacity(0.1)
-                                                        : Colors.orange
-                                                            .withOpacity(0.1),
+                                                        : userCase == 'yes'
+                                                            ? Colors.green
+                                                                .withOpacity(
+                                                                    0.1)
+                                                            : Colors.orange
+                                                                .withOpacity(
+                                                                    0.1),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             20),
                                                     border: Border.all(
-                                                      color: userCase == 'yes'
-                                                          ? Colors.green
-                                                          : Colors.orange,
+                                                      color:
+                                                          data['3daystest'] ==
+                                                                  true
+                                                              ? const Color(
+                                                                  0xFF512D84)
+                                                              : userCase ==
+                                                                      'yes'
+                                                                  ? Colors.green
+                                                                  : Colors
+                                                                      .orange,
                                                       width: 0.5,
                                                     ),
                                                   ),
                                                   child: Text(
-                                                    userCase == 'yes'
-                                                        ? 'Tasdiqlangan'
-                                                        : 'Kutilmoqda',
+                                                    data['3daystest'] == true
+                                                        ? '3 kunlik sinovdan o\'tdi'
+                                                        : userCase == 'yes'
+                                                            ? 'Tasdiqlangan'
+                                                            : 'Kutilmoqda',
                                                     style: TextStyle(
-                                                      color: userCase == 'yes'
-                                                          ? Colors.green
-                                                          : Colors.orange,
+                                                      color:
+                                                          data['3daystest'] ==
+                                                                  true
+                                                              ? const Color(
+                                                                  0xFF512D84)
+                                                              : userCase ==
+                                                                      'yes'
+                                                                  ? Colors.green
+                                                                  : Colors
+                                                                      .orange,
                                                       fontSize: 12,
                                                       fontWeight:
                                                           FontWeight.w500,
@@ -812,34 +1138,95 @@ class _AdminPageState extends State<AdminPage> {
                                                               ),
                                                               ListTile(
                                                                 leading: Icon(
-                                                                  userCase == 'yes'
+                                                                  userCase ==
+                                                                          'yes'
                                                                       ? Icons
                                                                           .close
-                                                                      : Icons
-                                                                          .check,
+                                                                      : data['3daystest'] ==
+                                                                              true
+                                                                          ? Icons
+                                                                              .check_circle
+                                                                          : Icons
+                                                                              .check,
                                                                   color: userCase ==
                                                                           'yes'
                                                                       ? Colors
                                                                           .red
-                                                                      : Colors
-                                                                          .green,
+                                                                      : data['3daystest'] ==
+                                                                              true
+                                                                          ? const Color(
+                                                                              0xFF512D84)
+                                                                          : Colors
+                                                                              .green,
                                                                 ),
                                                                 title: Text(
                                                                   userCase ==
                                                                           'yes'
                                                                       ? 'Rad etish'
-                                                                      : 'Tasdiqlash',
+                                                                      : data['3daystest'] ==
+                                                                              true
+                                                                          ? '3 kunlik sinovdan o\'tdi'
+                                                                          : 'Tasdiqlash',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: userCase ==
+                                                                            'yes'
+                                                                        ? Colors
+                                                                            .red
+                                                                        : data['3daystest'] ==
+                                                                                true
+                                                                            ? const Color(0xFF512D84)
+                                                                            : Colors.green,
+                                                                  ),
                                                                 ),
-                                                                onTap: () {
+                                                                onTap:
+                                                                    () async {
                                                                   Navigator.pop(
                                                                       context);
-                                                                  _updateUserCase(
-                                                                    username,
-                                                                    userCase ==
-                                                                            'yes'
-                                                                        ? 'no'
-                                                                        : 'yes',
-                                                                  );
+                                                                  if (userCase ==
+                                                                      'yes') {
+                                                                    _updateUserCase(
+                                                                        username,
+                                                                        'no');
+                                                                  } else {
+                                                                    if (data[
+                                                                            '3daystest'] ==
+                                                                        true) {
+                                                                      // Username bo'yicha userni topish
+                                                                      final userQuery = await _firestore
+                                                                          .collection(
+                                                                              'users')
+                                                                          .where(
+                                                                              'username',
+                                                                              isEqualTo: username)
+                                                                          .get();
+
+                                                                      if (userQuery
+                                                                          .docs
+                                                                          .isEmpty) {
+                                                                        if (!mounted)
+                                                                          return;
+                                                                        ScaffoldMessenger.of(context)
+                                                                            .showSnackBar(
+                                                                          const SnackBar(
+                                                                            content:
+                                                                                Text('Foydalanuvchi topilmadi'),
+                                                                            backgroundColor:
+                                                                                Colors.red,
+                                                                          ),
+                                                                        );
+                                                                        return;
+                                                                      }
+
+                                                                      // 3 kunlik sinovdan o'tgan o'quvchini tasdiqlash
+                                                                      _confirmStudent(
+                                                                          username);
+                                                                    } else {
+                                                                      _approveStudentDialog(
+                                                                          username,
+                                                                          doc.id);
+                                                                    }
+                                                                  }
                                                                 },
                                                               ),
                                                               ListTile(

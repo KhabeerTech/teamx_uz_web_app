@@ -66,7 +66,7 @@ class _GroupsPageState extends State<GroupsPage> {
   Future<void> _deleteGroup(String groupId) async {
     try {
       await _firestore.collection('groups').doc(groupId).delete();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

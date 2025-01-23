@@ -37,7 +37,7 @@ class _StudentStepPageState extends State<StudentStepPage> {
           .collection('users')
           .doc(widget.studentId)
           .get();
-      
+
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         setState(() {
@@ -72,16 +72,16 @@ class _StudentStepPageState extends State<StudentStepPage> {
           .collection('users')
           .doc(widget.studentId)
           .update({'current_step': _stepController.text});
-      
+
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Qadam muvaffaqiyatli saqlandi'),
           backgroundColor: Colors.green,
         ),
       );
-      
+
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -102,7 +102,9 @@ class _StudentStepPageState extends State<StudentStepPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.studentName} - Qadam'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text('${widget.studentName} - Qadam',
+            style: const TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF512DA8),
       ),
       body: Padding(

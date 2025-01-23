@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class TeamLeadProfilePage extends StatelessWidget {
   final String username;
 
-  const TeamLeadProfilePage({Key? key, required this.username}) : super(key: key);
+  const TeamLeadProfilePage({Key? key, required this.username})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,10 @@ class TeamLeadProfilePage extends StatelessWidget {
                       radius: 50,
                       backgroundColor: const Color(0xFF512DA8),
                       child: Text(
-                        teamLeadData['full_name']?.substring(0, 1).toUpperCase() ?? 'T',
+                        teamLeadData['full_name']
+                                ?.substring(0, 1)
+                                .toUpperCase() ??
+                            'T',
                         style: const TextStyle(
                           fontSize: 40,
                           color: Colors.white,
@@ -86,17 +90,22 @@ class TeamLeadProfilePage extends StatelessWidget {
                       _buildInfoItem(
                         icon: Icons.location_on,
                         title: 'Akademiya',
-                        value: teamLeadData['academy_location'] ?? 'N/A',
+                        value: teamLeadData['region'] ?? 'N/A',
                       ),
                       _buildInfoItem(
                         icon: Icons.phone,
-                        title: 'Ota tel',
+                        title: 'Otangizning telefon raqami',
                         value: teamLeadData['father_phone'] ?? 'N/A',
                       ),
                       _buildInfoItem(
                         icon: Icons.phone,
-                        title: 'Ona tel',
+                        title: 'Onangizning telefon raqami',
                         value: teamLeadData['mother_phone'] ?? 'N/A',
+                      ),
+                      _buildInfoItem(
+                        icon: Icons.phone,
+                        title: 'Telefon raqamingiz',
+                        value: teamLeadData['phone'] ?? 'N/A',
                       ),
                     ],
                   ),
@@ -125,7 +134,8 @@ class TeamLeadProfilePage extends StatelessWidget {
                             .where('team_lead_username', isEqualTo: username)
                             .snapshots(),
                         builder: (context, snapshot) {
-                          final studentCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                          final studentCount =
+                              snapshot.hasData ? snapshot.data!.docs.length : 0;
                           return _buildInfoItem(
                             icon: Icons.people,
                             title: 'O\'quvchilar soni',

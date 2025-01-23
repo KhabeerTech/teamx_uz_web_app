@@ -7,6 +7,7 @@ import 'package:teamx_uz_web_app/pages/student_page.dart';
 import 'package:teamx_uz_web_app/pages/signup.dart';
 import 'package:teamx_uz_web_app/admins/admin_page.dart';
 import 'package:teamx_uz_web_app/team_leads/team_lead_home_page.dart';
+import 'package:teamx_uz_web_app/head_teacher/head_teacher_page.dart';
 import 'package:teamx_uz_web_app/pages/sing_In_wait.dart';
 
 final TextEditingController _usernameController = TextEditingController();
@@ -77,13 +78,32 @@ class _SignIn_usernameState extends State<SignIn_username>
           print('Password matched'); // Debug
           print('User Type: ${userData['role']}'); // Debug
 
+          // Student uchun case tekshirish
+          if (userData['role'] != 'admin' &&
+              userData['role'] != 'head_teacher' &&
+              userData['case'] != 'yes' &&
+              userData['3daystest'] != true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Admin tasdiqlanishini kuting'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            setState(() {
+              _isLoading = false;
+            });
+            return;
+          }
+
           if (userData['role'] == 'team_lead') {
             print('User is team lead'); // Debug
-            
+
             if (userData['is_approved'] != true) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Sizning hisobingiz hali admin tomonidan tasdiqlanmagan!'),
+                  content: Text(
+                      'Sizning hisobingiz hali admin tomonidan tasdiqlanmagan!'),
                   backgroundColor: Colors.red,
                   duration: Duration(seconds: 3),
                 ),
@@ -93,13 +113,24 @@ class _SignIn_usernameState extends State<SignIn_username>
               });
               return;
             }
-            
+
             // Team Lead uchun
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => TeamLeadHomePage(
-                  username: _usernameController.text,
+                  userData: userData,
+                ),
+              ),
+            );
+          } else if (userData['role'] == 'head_teacher') {
+            print('User is head teacher'); // Debug
+            // Head teacher uchun
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HeadTeacherPage(
+                  userData: userData,
                 ),
               ),
             );
@@ -334,15 +365,20 @@ class _SignIn_usernameState extends State<SignIn_username>
                             "Username",
                           ).copyWith(
                             labelStyle: const TextStyle(
-                              fontWeight:
-                                  FontWeight.w800, // Label matnini qalin qilish
+                              fontWeight: FontWeight.w800,
                               color: Color(0xFF512D84),
                             ),
                           ),
                           style: const TextStyle(
                             color: Color(0xFF512D84),
-                            // fontWeight: FontWeight.w900,
                           ),
+                          textInputAction: TextInputAction.next,
+                          autofocus: false,
+                          onTap: () {
+                            if (!FocusScope.of(context).hasFocus) {
+                              FocusScope.of(context).unfocus();
+                            }
+                          },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Username kiriting';
@@ -355,8 +391,7 @@ class _SignIn_usernameState extends State<SignIn_username>
                           controller: _passwordController,
                           decoration: inputDecoration("Parol").copyWith(
                             labelStyle: const TextStyle(
-                              fontWeight:
-                                  FontWeight.w900, // Label matnini qalin qilish
+                              fontWeight: FontWeight.w900,
                               color: Color(0xFF512D84),
                             ),
                           ),
@@ -364,6 +399,13 @@ class _SignIn_usernameState extends State<SignIn_username>
                             color: Color(0xFF512D84),
                             fontWeight: FontWeight.bold,
                           ),
+                          textInputAction: TextInputAction.done,
+                          autofocus: false,
+                          onTap: () {
+                            if (!FocusScope.of(context).hasFocus) {
+                              FocusScope.of(context).unfocus();
+                            }
+                          },
                           obscureText: true,
                           validator: (value) {
                             if (value == null || value.isEmpty) {

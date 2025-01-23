@@ -28,6 +28,7 @@ class SignIn extends StatelessWidget {
       double screenHeight = constraints.maxHeight;
       return Scaffold(
         appBar: AppBar(
+          iconTheme: const IconThemeData(color: Color(0xFF512D84)),
           title: Image.asset(
             "assets/logo.png",
             height: 100,
