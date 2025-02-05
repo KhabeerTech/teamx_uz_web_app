@@ -12,6 +12,113 @@ class ApproveStudentsPage extends StatefulWidget {
   State<ApproveStudentsPage> createState() => _ApproveStudentsPageState();
 }
 
+class _StudentSearchList extends StatefulWidget {
+  final List<QueryDocumentSnapshot> students;
+  final Function(Map<String, dynamic>) onApprove;
+
+  const _StudentSearchList({
+    Key? key,
+    required this.students,
+    required this.onApprove,
+  }) : super(key: key);
+
+  @override
+  State<_StudentSearchList> createState() => _StudentSearchListState();
+}
+
+class _StudentSearchListState extends State<_StudentSearchList> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Ism, username yoki telefon bo\'yicha qidirish...',
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF512D84)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+            itemCount: widget.students.length,
+            itemBuilder: (context, index) {
+              final student = widget.students[index].data() as Map<String, dynamic>;
+              final fullName = (student['full_name'] ?? '').toString().toLowerCase();
+              final username = (student['username'] ?? '').toString().toLowerCase();
+              final phone = (student['phone'] ?? student['father_phone'] ?? '').toString().toLowerCase();
+
+              if (_searchQuery.isNotEmpty &&
+                  !fullName.contains(_searchQuery) &&
+                  !username.contains(_searchQuery) &&
+                  !phone.contains(_searchQuery)) {
+                return const SizedBox.shrink();
+              }
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: const Icon(Icons.person_outline, color: Color(0xFF512DA8)),
+                  title: Text(
+                    student['full_name'] ?? 'Nomsiz',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('@${student['username'] ?? ''}'),
+                      Text('Tel: ${student['phone'] == 'N/A' || student['phone'] == null ? student['father_phone'] ?? 'N/A' : student['phone']}'),
+                      Text('Region: ${student['region'] ?? 'N/A'}'),
+                    ],
+                  ),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF512DA8),
+                    ),
+                    onPressed: () => widget.onApprove(student),
+                    child: const Text(
+                      'Tasdiqlash',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ApproveStudentsPageState extends State<ApproveStudentsPage> {
   final List<String> _weekDays = [
     'dushanba',
@@ -24,6 +131,14 @@ class _ApproveStudentsPageState extends State<ApproveStudentsPage> {
   final List<String> _selectedDays = [];
   String? _dateText;
   DateTime? _startDate;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   bool _isValidDate(String value) {
     if (value.length != 10) return false;
@@ -411,45 +526,9 @@ class _ApproveStudentsPageState extends State<ApproveStudentsPage> {
 
         return Stack(
           children: [
-            ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-              itemCount: students.length,
-              itemBuilder: (context, index) {
-                final student = students[index].data() as Map<String, dynamic>;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: const Icon(Icons.person_outline,
-                        color: Color(0xFF512DA8)),
-                    title: Text(
-                      student['full_name'] ?? 'Nomsiz',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('@${student['username'] ?? ''}'),
-                        Text(
-                            'Tel: ${student['phone'] == 'N/A' || student['phone'] == null ? student['father_phone'] ?? 'N/A' : student['phone']}'),
-                        Text('Region: ${student['region'] ?? 'N/A'}'),
-                      ],
-                    ),
-                    trailing: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF512DA8),
-                      ),
-                      onPressed: () => _approveStudent(student),
-                      child: const Text(
-                        'Tasdiqlash',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                );
-              },
+            _StudentSearchList(
+              students: students,
+              onApprove: _approveStudent,
             ),
             Align(
               alignment: Alignment.bottomCenter,

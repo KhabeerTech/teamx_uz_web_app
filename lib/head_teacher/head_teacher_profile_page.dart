@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'assign_student_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:teamx_uz_web_app/pages/onboard.dart';
 
 class HeadTeacherProfilePage extends StatelessWidget {
   final Map<String, dynamic> userData;
@@ -46,7 +48,7 @@ class HeadTeacherProfilePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      userData['full_name'] ?? 'Nomsiz',
+                      userData['name'] ?? 'Nomsiz',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -119,35 +121,37 @@ class HeadTeacherProfilePage extends StatelessWidget {
                       Icons.location_city,
                     ),
                     const SizedBox(height: 24),
-                    // Center(
-                    //   child: ElevatedButton.icon(
-                    //     style: ElevatedButton.styleFrom(
-                    //       backgroundColor: const Color(0xFF512DA8),
-                    //       padding: const EdgeInsets.symmetric(
-                    //         horizontal: 32,
-                    //         vertical: 16,
-                    //       ),
-                    //       shape: RoundedRectangleBorder(
-                    //         borderRadius: BorderRadius.circular(30),
-                    //       ),
-                    //     ),
-                    //     onPressed: () {
-                    //       Navigator.push(
-                    //         context,
-                    //         MaterialPageRoute(
-                    //           builder: (context) => AssignStudentPage(
-                    //             userData: userData,
-                    //           ),
-                    //         ),
-                    //       );
-                    //     },
-                    //     icon: const Icon(Icons.person_add, color: Colors.white),
-                    //     label: const Text(
-                    //       'O\'quvchilarni biriktirish',
-                    //       style: TextStyle(color: Colors.white),
-                    //     ),
-                    //   ),
-                    // ),
+                    Center(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: () async {
+                          // Clear username from SharedPreferences
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.remove('username');
+                          
+                          if (context.mounted) {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (context) => const OnboardPages()),
+                              (route) => false,
+                            );
+                          }
+                        },
+                        child: const Text(
+                          'Chiqish',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

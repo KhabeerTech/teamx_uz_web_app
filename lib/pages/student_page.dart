@@ -17,6 +17,7 @@ class StudentPage extends StatefulWidget {
     super.key,
     required this.username,
     this.onPersonalCabinetPressed,
+    required Map<String, dynamic> userData,
   });
 
   @override
@@ -444,14 +445,16 @@ class _StudentPageState extends State<StudentPage>
                             if (!mounted) return;
 
                             if (userDoc.exists) {
-                              final userData = userDoc.data() as Map<String, dynamic>;
+                              final userData =
+                                  userDoc.data() as Map<String, dynamic>;
 
                               // 3daystest true bo'lsa TrialStepsPage ga o'tish
                               if (userData['3daystest'] == true) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const TrialStepsPage(),
+                                    builder: (context) =>
+                                        const TrialStepsPage(),
                                   ),
                                 );
                               } else {
@@ -497,45 +500,45 @@ class _StudentPageState extends State<StudentPage>
                             ),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AboutAcademyPage(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: screenWidth * 0.9,
-                            height: screenWidth <= 800
-                                ? screenHeight * 0.07
-                                : buttonHeight * scale,
-                            margin: EdgeInsets.only(
-                                bottom: screenWidth <= 800
-                                    ? screenHeight * 0.025
-                                    : 16),
-                            decoration: BoxDecoration(
-                              color: const Color.fromRGBO(239, 233, 233, 1),
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(
-                                color: const Color.fromRGBO(81, 45, 132, 1),
-                                width: 1,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Akademiya haqida',
-                                style: TextStyle(
-                                  fontSize: textSize,
-                                  fontFamily: 'Nexa',
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF512D84),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        // GestureDetector(
+                        //   onTap: () {
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //         builder: (context) => const AboutAcademyPage(),
+                        //       ),
+                        //     );
+                        //   },
+                        //   child: Container(
+                        //     width: screenWidth * 0.9,
+                        //     height: screenWidth <= 800
+                        //         ? screenHeight * 0.07
+                        //         : buttonHeight * scale,
+                        //     margin: EdgeInsets.only(
+                        //         bottom: screenWidth <= 800
+                        //             ? screenHeight * 0.025
+                        //             : 16),
+                        //     decoration: BoxDecoration(
+                        //       color: const Color.fromRGBO(239, 233, 233, 1),
+                        //       borderRadius: BorderRadius.circular(15),
+                        //       border: Border.all(
+                        //         color: const Color.fromRGBO(81, 45, 132, 1),
+                        //         width: 1,
+                        //       ),
+                        //     ),
+                        //     child: Center(
+                        //       child: Text(
+                        //         'Akademiya haqida',
+                        //         style: TextStyle(
+                        //           fontSize: textSize,
+                        //           fontFamily: 'Nexa',
+                        //           fontWeight: FontWeight.w800,
+                        //           color: const Color(0xFF512D84),
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),

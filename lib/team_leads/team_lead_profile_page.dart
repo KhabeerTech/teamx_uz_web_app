@@ -1,11 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:teamx_uz_web_app/pages/signIn_username.dart';
+import 'dart:html' as html;
 
 class TeamLeadProfilePage extends StatelessWidget {
   final String username;
 
   const TeamLeadProfilePage({Key? key, required this.username})
       : super(key: key);
+
+  void _signOut(BuildContext context) {
+    // localStorage dan ma'lumotlarni o'chirish
+    html.window.localStorage.remove('username');
+    html.window.localStorage.remove('password');
+    html.window.localStorage.remove('user_role');
+
+    // Sign in page ga o'tish
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const SignIn_username(),
+      ),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +163,78 @@ class TeamLeadProfilePage extends StatelessWidget {
                         },
                       ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(username)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final userData = snapshot.data!.data() as Map<String, dynamic>;
+                  final groupLink = userData['group_link'] as String?;
+
+                  if (groupLink == null || groupLink.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (await canLaunch(groupLink)) {
+                          await launch(groupLink);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8C52FF),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'Guruhim',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () => _signOut(context),
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(239, 233, 233, 1),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: const Color.fromRGBO(81, 45, 132, 1),
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Chiqish',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF512D84),
+                      ),
+                    ),
                   ),
                 ),
               ),

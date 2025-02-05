@@ -254,36 +254,117 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     double screenHeight = size.height;
     double fontSize = screenWidth <= 500 ? 18 : 24;
 
-    return Container(
-      width: screenWidth * 0.98,
-      height: screenHeight * 0.08,
-      margin: EdgeInsets.symmetric(
-        vertical: screenHeight * 0.01,
-        horizontal: screenWidth * 0.005,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF8C52FF),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFF8C52FF),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Hozirgi qadam: ${userStep}-qadam',
-            style: TextStyle(
-              fontSize: fontSize,
-              fontFamily: 'Nexa',
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.username)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final userData = snapshot.data!.data() as Map<String, dynamic>;
+        final currentStep = userData['steps'] ?? 0;
+        final startDate = userData['start_date'] as String?;
+        final expectedStep = _calculateExpectedStep(startDate);
+
+        return Column(
+          children: [
+           
+            Container(
+              width: screenWidth * 0.98,
+              height: screenHeight * 0.08,
+              margin: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.01,
+                horizontal: screenWidth * 0.005,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8C52FF),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: const Color(0xFF8C52FF),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Tartib bo’yicha: $expectedStep-qadam',
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontFamily: 'Nexa',
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ), Container(
+              width: screenWidth * 0.98,
+              height: screenHeight * 0.08,
+              margin: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.01,
+                horizontal: screenWidth * 0.005,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8C52FF),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: const Color(0xFF8C52FF),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Hozirgi qadam: $currentStep-qadam',
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontFamily: 'Nexa',
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
+  }
+
+  String _calculateExpectedStep(String? startDateStr) {
+    if (startDateStr == null) return '0';
+    
+    try {
+      // Sanani parse qilish (format: dd.MM.yyyy)
+      final dateParts = startDateStr.split('.');
+      if (dateParts.length != 3) return '0';
+      
+      final day = int.parse(dateParts[0]);
+      final month = int.parse(dateParts[1]);
+      final year = int.parse(dateParts[2]);
+      
+      final startDate = DateTime(year, month, day);
+      final today = DateTime.now();
+      
+      // Kunlar farqini hisoblash
+      final difference = today.difference(startDate).inDays;
+      
+      // Har kuni 1 qadam
+      final expectedStep = difference + 1; // Bugungi kun ham hisoblanadi
+      
+      // 600 dan oshib ketmasligi kerak
+      return expectedStep > 600 ? '600' : expectedStep.toString();
+      
+    } catch (e) {
+      print('Sana parse qilishda xatolik: $e');
+      return '0';
+    }
   }
 
   @override

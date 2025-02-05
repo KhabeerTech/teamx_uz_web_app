@@ -465,7 +465,7 @@ class _SignUpNextState extends State<SignUpNext> with TickerProviderStateMixin {
                       Expanded(
                         child: TextFormField(
                           controller: _schoolNumber,
-                          decoration: inputDecoration("10"),
+                          decoration: inputDecoration("Maktab"),
                           style: const TextStyle(color: Color(0xFF512D84)),
                           keyboardType: TextInputType.number,
                           inputFormatters: [

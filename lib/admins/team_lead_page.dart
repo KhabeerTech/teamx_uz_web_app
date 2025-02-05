@@ -13,6 +13,14 @@ class TeamLeadPage extends StatefulWidget {
 class _TeamLeadPageState extends State<TeamLeadPage> {
   String? selectedTeamLead;
   String? _selectedRegion;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _showRegionSelectionDialog() async {
     final regionsSnapshot =
@@ -78,57 +86,103 @@ class _TeamLeadPageState extends State<TeamLeadPage> {
 
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Foydalanuvchini tanlang'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: availableUsers.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Bu regionda mavjud foydalanuvchilar topilmadi',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: availableUsers.length,
-                    itemBuilder: (context, index) {
-                      final user = availableUsers[index].data();
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF512DA8),
-                          child: Text(
-                            user['full_name']
-                                    ?.toString()
-                                    .substring(0, 1)
-                                    .toUpperCase() ??
-                                'N',
-                            style: const TextStyle(color: Colors.white),
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) {
+            // Qidiruv natijalarini filter qilish
+            return AlertDialog(
+              title: const Text('Foydalanuvchini tanlang'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: Column(
+                  children: [
+                    // Qidiruv maydoni
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Ism yoki username bo\'yicha qidirish...',
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF512D84)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
                           ),
                         ),
-                        title: Text(user['full_name'] ?? 'Nomsiz'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('@${user['username'] ?? ''}'),
-                            Text('Role: ${user['role'] ?? 'N/A'}'),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showAdditionalInfoDialog(user);
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value.toLowerCase();
+                          });
                         },
-                      );
-                    },
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Bekor qilish'),
-            ),
-          ],
+                      ),
+                    ),
+                    // Foydalanuvchilar ro'yxati
+                    Expanded(
+                      child: availableUsers.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Bu regionda mavjud foydalanuvchilar topilmadi',
+                              style: TextStyle(fontSize: 16, color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: availableUsers.length,
+                            itemBuilder: (context, index) {
+                              final user = availableUsers[index].data();
+                              final fullName = (user['full_name'] ?? '').toString().toLowerCase();
+                              final username = (user['username'] ?? '').toString().toLowerCase();
+                              
+                              // Qidiruv filtri
+                              if (_searchQuery.isNotEmpty &&
+                                  !fullName.contains(_searchQuery) &&
+                                  !username.contains(_searchQuery)) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: const Color(0xFF512DA8),
+                                  child: Text(
+                                    user['full_name']
+                                            ?.toString()
+                                            .substring(0, 1)
+                                            .toUpperCase() ??
+                                        'N',
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                title: Text(user['full_name'] ?? 'Nomsiz'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('@${user['username'] ?? ''}'),
+                                    Text('Role: ${user['role'] ?? 'N/A'}'),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _showAdditionalInfoDialog(user);
+                                },
+                              );
+                            },
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Bekor qilish'),
+                ),
+              ],
+            );
+          },
         ),
       );
     } catch (e) {

@@ -12,7 +12,6 @@ class _PaymentsPageState extends State<PaymentsPage> {
   final _firestore = FirebaseFirestore.instance;
   String? _selectedRegion;
   final TextEditingController _paymentDateController = TextEditingController();
-  // To'lov ko'rinishi turi: 'today', 'tomorrow', 'week'
   String _viewType = 'today';
 
   Widget _buildStatCard(
@@ -551,191 +550,9 @@ class _PaymentsPageState extends State<PaymentsPage> {
                             );
                           }
 
-                          return ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filteredStudents.length,
-                            itemBuilder: (context, index) {
-                              final student = filteredStudents[index];
-                              final fullName =
-                                  student['full_name']?.toString() ?? 'Nomsiz';
-                              final firstLetter = fullName.isNotEmpty
-                                  ? fullName[0].toUpperCase()
-                                  : 'N';
-
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: const Color(0xFF512D84),
-                                    child: Text(
-                                      firstLetter,
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    fullName,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('@${student['username'] ?? ''}'),
-                                      Text(
-                                          'Tel: ${student['father_phone'] ?? 'N/A'}'),
-                                    ],
-                                  ),
-                                  trailing: MediaQuery.of(context).size.width <
-                                          600
-                                      ? Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SizedBox(
-                                              width: 35,
-                                              height: 35,
-                                              child: ElevatedButton(
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.red,
-                                                  padding: EdgeInsets.zero,
-                                                ),
-                                                onPressed: () async {
-                                                  try {
-                                                    await _firestore
-                                                        .collection('users')
-                                                        .doc(
-                                                            student['username'])
-                                                        .update({
-                                                      'payment': false,
-                                                    });
-
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text(
-                                                              'To\'lov qilmadi deb belgilandi'),
-                                                          backgroundColor:
-                                                              Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  } catch (e) {
-                                                    if (mounted) {
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                        SnackBar(
-                                                          content: Text(
-                                                              'Xatolik yuz berdi: $e'),
-                                                          backgroundColor:
-                                                              Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                },
-                                                child: const Icon(
-                                                  Icons.close,
-                                                  color: Colors.white,
-                                                  size: 20,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            SizedBox(
-                                              width: 35,
-                                              height: 35,
-                                              child: ElevatedButton(
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      const Color.fromARGB(
-                                                          255, 113, 192, 116),
-                                                  padding: EdgeInsets.zero,
-                                                ),
-                                                onPressed: () =>
-                                                    _addPayment(student),
-                                                child: const Icon(
-                                                  Icons.check_circle,
-                                                  color: Colors.white,
-                                                  size: 20,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                              ),
-                                              onPressed: () async {
-                                                try {
-                                                  await _firestore
-                                                      .collection('users')
-                                                      .doc(student['username'])
-                                                      .update({
-                                                    'payment': false,
-                                                  });
-
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                            'To\'lov qilmadi deb belgilandi'),
-                                                        backgroundColor:
-                                                            Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                } catch (e) {
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
-                                                            'Xatolik yuz berdi: $e'),
-                                                        backgroundColor:
-                                                            Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                }
-                                              },
-                                              child: const Text(
-                                                'To\'lov qilmadi',
-                                                style: TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    const Color(0xFF512D84),
-                                              ),
-                                              onPressed: () =>
-                                                  _addPayment(student),
-                                              child: const Text(
-                                                'To\'lov qildi',
-                                                style: TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              );
-                            },
+                          return StudentSearchList(
+                            students: filteredStudents,
+                            onPaymentAdd: _addPayment,
                           );
                         },
                       ),
@@ -966,5 +783,252 @@ class _PaymentsPageState extends State<PaymentsPage> {
   void dispose() {
     _paymentDateController.dispose();
     super.dispose();
+  }
+}
+
+// StudentSearchList widget
+class StudentSearchList extends StatefulWidget {
+  final List<Map<String, dynamic>> students;
+  final Function(Map<String, dynamic>) onPaymentAdd;
+
+  const StudentSearchList({
+    Key? key,
+    required this.students,
+    required this.onPaymentAdd,
+  }) : super(key: key);
+
+  @override
+  State<StudentSearchList> createState() => _StudentSearchListState();
+}
+
+class _StudentSearchListState extends State<StudentSearchList> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  List<Map<String, dynamic>> _filteredStudents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredStudents = widget.students;
+  }
+
+  @override
+  void didUpdateWidget(StudentSearchList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.students != widget.students) {
+      _filterStudents();
+    }
+  }
+
+  void _filterStudents() {
+    setState(() {
+      _filteredStudents = widget.students.where((student) {
+        final fullName = (student['full_name'] ?? '').toString().toLowerCase();
+        final username = (student['username'] ?? '').toString().toLowerCase();
+        final phone = (student['father_phone'] ?? '').toString().toLowerCase();
+        
+        return _searchQuery.isEmpty ||
+            fullName.contains(_searchQuery) ||
+            username.contains(_searchQuery) ||
+            phone.contains(_searchQuery);
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Qidiruv maydoni
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'O\'quvchi ismi, username yoki telefon raqami...',
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF512D84)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+                _filterStudents();
+              });
+            },
+          ),
+        ),
+        // O'quvchilar ro'yxati
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _filteredStudents.length,
+            itemBuilder: (context, index) {
+              final student = _filteredStudents[index];
+              final fullName = student['full_name']?.toString() ?? 'Nomsiz';
+              final firstLetter = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'N';
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFF512D84),
+                    child: Text(
+                      firstLetter,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(
+                    fullName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('@${student['username'] ?? ''}'),
+                      Text('Tel: ${student['father_phone'] ?? 'N/A'}'),
+                    ],
+                  ),
+                  trailing: MediaQuery.of(context).size.width < 600
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 35,
+                              height: 35,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  padding: EdgeInsets.zero,
+                                ),
+                                onPressed: () async {
+                                  try {
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(student['username'])
+                                        .update({
+                                      'payment': false,
+                                    });
+
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('To\'lov qilmadi deb belgilandi'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Xatolik yuz berdi: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 35,
+                              height: 35,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(255, 113, 192, 116),
+                                  padding: EdgeInsets.zero,
+                                ),
+                                onPressed: () => widget.onPaymentAdd(student),
+                                child: const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              onPressed: () async {
+                                try {
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(student['username'])
+                                      .update({
+                                    'payment': false,
+                                  });
+
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('To\'lov qilmadi deb belgilandi'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Xatolik yuz berdi: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              child: const Text(
+                                'To\'lov qilmadi',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF512D84),
+                              ),
+                              onPressed: () => widget.onPaymentAdd(student),
+                              child: const Text(
+                                'To\'lov qildi',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:teamx_uz_web_app/pages/signIn_username.dart';
+import 'dart:html' as html;
 
 class PersonalCabinetPage extends StatefulWidget {
   final String username;
@@ -25,6 +27,21 @@ class _PersonalCabinetPageState extends State<PersonalCabinetPage>
     'mother_phone': 'Onangizning telefon raqami',
     'father_phone': 'Otangizning telefon raqami',
   };
+
+  void _signOut() {
+    // localStorage dan ma'lumotlarni o'chirish
+    html.window.localStorage.remove('username');
+    html.window.localStorage.remove('password');
+    html.window.localStorage.remove('user_role');
+
+    // Sign in page ga o'tish
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const SignIn_username(),
+      ),
+      (route) => false,
+    );
+  }
 
   @override
   void initState() {
@@ -337,17 +354,46 @@ class _PersonalCabinetPageState extends State<PersonalCabinetPage>
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: _fieldNames.entries.map((entry) {
-                              final value = _userData![entry.key];
-                              if (value == null) return const SizedBox.shrink();
+                            children: [
+                              ..._fieldNames.entries.map((entry) {
+                                final value = _userData![entry.key];
+                                if (value == null) return const SizedBox.shrink();
 
-                              return _buildButton(
-                                '${entry.value}: ${value.toString()}',
-                                fontSize,
-                                screenWidth * 0.85,
-                                buttonHeight,
-                              );
-                            }).toList(),
+                                return _buildButton(
+                                  '${entry.value}: ${value.toString()}',
+                                  fontSize,
+                                  screenWidth * 0.85,
+                                  buttonHeight,
+                                );
+                              }).toList(),
+                              const SizedBox(height: 20),
+                              GestureDetector(
+                                onTap: _signOut,
+                                child: Container(
+                                  width: screenWidth * 0.85,
+                                  height: buttonHeight,
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromRGBO(239, 233, 233, 1),
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(
+                                      color: const Color.fromRGBO(81, 45, 132, 1),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Chiqish',
+                                      style: TextStyle(
+                                        fontSize: fontSize,
+                                        fontFamily: 'Nexa',
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF512D84),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],

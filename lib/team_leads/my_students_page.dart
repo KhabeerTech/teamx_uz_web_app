@@ -199,7 +199,8 @@ class _MyStudentsPageState extends State<MyStudentsPage> {
       setState(() {
         _selectedTime = picked;
         // Format time as HH:mm
-        _timeString = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+        _timeString =
+            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
       });
     }
   }
@@ -215,51 +216,51 @@ class _MyStudentsPageState extends State<MyStudentsPage> {
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.access_time, color: Color(0xFF512DA8)),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () => _selectTime(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF512DA8).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFF512DA8).withOpacity(0.2),
-                      ),
-                    ),
-                    child: Text(
-                      _timeString.isEmpty ? 'Vaqtni tanlang' : _timeString,
-                      style: TextStyle(
-                        color: _timeString.isEmpty
-                            ? Colors.grey
-                            : const Color(0xFF512DA8),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Container(
+          //   padding: const EdgeInsets.all(16),
+          //   decoration: BoxDecoration(
+          //     color: Colors.white,
+          //     borderRadius: BorderRadius.circular(12),
+          //     boxShadow: [
+          //       BoxShadow(
+          //         color: Colors.grey.withOpacity(0.1),
+          //         blurRadius: 4,
+          //         offset: const Offset(0, 2),
+          //       ),
+          //     ],
+          //   ),
+          //   child: Row(
+          //     children: [
+          //       const Icon(Icons.access_time, color: Color(0xFF512DA8)),
+          //       const SizedBox(width: 12),
+          //       GestureDetector(
+          //         onTap: () => _selectTime(context),
+          //         child: Container(
+          //           padding: const EdgeInsets.symmetric(
+          //             horizontal: 16,
+          //             vertical: 8,
+          //           ),
+          //           decoration: BoxDecoration(
+          //             color: const Color(0xFF512DA8).withOpacity(0.1),
+          //             borderRadius: BorderRadius.circular(8),
+          //             border: Border.all(
+          //               color: const Color(0xFF512DA8).withOpacity(0.2),
+          //             ),
+          //           ),
+          //           child: Text(
+          //             _timeString.isEmpty ? 'Vaqtni tanlang' : _timeString,
+          //             style: TextStyle(
+          //               color: _timeString.isEmpty
+          //                   ? Colors.grey
+          //                   : const Color(0xFF512DA8),
+          //               fontSize: 16,
+          //             ),
+          //           ),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
           const SizedBox(height: 16),
           StreamBuilder<QuerySnapshot>(
             stream: _studentsStream,
@@ -283,7 +284,8 @@ class _MyStudentsPageState extends State<MyStudentsPage> {
                   padding: const EdgeInsets.all(16),
                   itemCount: students.length,
                   itemBuilder: (context, index) {
-                    final student = students[index].data() as Map<String, dynamic>;
+                    final student =
+                        students[index].data() as Map<String, dynamic>;
                     final steps = student['steps'] as int? ?? 0;
                     final stepColor = _getStepColor(steps);
                     final attendanceDays =
@@ -317,20 +319,26 @@ class _MyStudentsPageState extends State<MyStudentsPage> {
                                   const Spacer(),
                                   const SizedBox(width: 10),
                                   GestureDetector(
-                                    onTap: () =>
-                                        _showColorPicker(context, students[index].id),
+                                    onTap: () => _showColorPicker(
+                                        context, students[index].id),
                                     child: Container(
-                                      width: MediaQuery.of(context).size.width < 600
+                                      width: MediaQuery.of(context).size.width <
+                                              600
                                           ? 20
                                           : 30,
-                                      height: MediaQuery.of(context).size.width < 600
-                                          ? 20
-                                          : 30,
+                                      height:
+                                          MediaQuery.of(context).size.width <
+                                                  600
+                                              ? 20
+                                              : 30,
                                       decoration: BoxDecoration(
                                         color: _getStatusColor(status),
                                         border: Border.all(
                                           color: Colors.grey.withOpacity(0.5),
-                                          width: MediaQuery.of(context).size.width < 600
+                                          width: MediaQuery.of(context)
+                                                        .size
+                                                      .width <
+                                                  600
                                               ? 1
                                               : 2,
                                         ),
@@ -341,8 +349,9 @@ class _MyStudentsPageState extends State<MyStudentsPage> {
                               ),
                             ),
                             SizedBox(
-                                width:
-                                    MediaQuery.of(context).size.width < 600 ? 5 : 15),
+                                width: MediaQuery.of(context).size.width < 600
+                                    ? 5
+                                    : 15),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,

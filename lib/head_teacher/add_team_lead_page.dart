@@ -15,6 +15,8 @@ class _AddTeamLeadPageState extends State<AddTeamLeadPage> {
   final _groupLinkController = TextEditingController();
   final _groupIdController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   Future<Map<String, String>?> _showGroupInfoDialog() async {
     return showDialog<Map<String, String>>(
@@ -116,6 +118,7 @@ class _AddTeamLeadPageState extends State<AddTeamLeadPage> {
     _phoneController.dispose();
     _groupLinkController.dispose();
     _groupIdController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -150,115 +153,183 @@ class _AddTeamLeadPageState extends State<AddTeamLeadPage> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: students.length,
-          itemBuilder: (context, index) {
-            final student = students[index].data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading:
-                    const Icon(Icons.person_outline, color: Color(0xFF512DA8)),
-                title: Text(
-                  student['full_name'] ?? 'Nomsiz',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+        return _StudentSearchList(
+          students: students,
+          onStudentSelected: (student) async {
+            try {
+              final studentData = student;
+              final newUsername = '${studentData['username']}_TL';
+
+              // Avval shu username li team lead borligini tekshirish
+              final existingTeamLead = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(newUsername)
+                  .get();
+
+              if (existingTeamLead.exists) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Bu user allaqachon Team Lead qilingan!'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+                return;
+              }
+
+              // Agar team lead mavjud bo'lmasa, guruh ma'lumotlarini so'raymiz
+              if (context.mounted) {
+                final result = await _showGroupInfoDialog();
+                if (result != null) {
+                  // Yangi team lead uchun ma'lumotlarni tayyorlash
+                  final teamLeadData = {
+                    ...studentData,
+                    'username': newUsername,
+                    'role': 'team_lead',
+                    'group_link': result['groupLink'],
+                    'group_id': result['groupId'],
+                    'phone': result['phone'],
+                    'is_approved': true,
+                    'head_teacher_username': widget.userData['username'],
+                  };
+
+                  // Yangi team lead ni username bilan document ID sifatida qo'shish
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(newUsername)
+                      .set(teamLeadData);
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Team Lead muvaffaqiyatli qo\'shildi'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Xatolik yuz berdi: $e'),
+                    backgroundColor: Colors.red,
                   ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('@${student['username'] ?? ''}'),
-                    Text(
-                        'Tel: ${student['phone'] == 'N/A' || student['phone'] == null ? student['father_phone'] ?? 'N/A' : student['phone']}'),
-                    Text('Region: ${student['region'] ?? 'N/A'}'),
-                  ],
-                ),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF512DA8),
-                  ),
-                  onPressed: () async {
-                    try {
-                      final studentData = student;
-                      final newUsername = '${studentData['username']}_TL';
-
-                      // Avval shu username li team lead borligini tekshirish
-                      final existingTeamLead = await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(newUsername)
-                          .get();
-
-                      if (existingTeamLead.exists) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Bu user allaqachon Team Lead qilingan!'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
-                        return;
-                      }
-
-                      // Agar team lead mavjud bo'lmasa, guruh ma'lumotlarini so'raymiz
-                      if (context.mounted) {
-                        final result = await _showGroupInfoDialog();
-                        if (result != null) {
-                          // Yangi team lead uchun ma'lumotlarni tayyorlash
-                          final teamLeadData = {
-                            ...studentData,
-                            'username': newUsername,
-                            'role': 'team_lead',
-                            'group_link': result['groupLink'],
-                            'group_id': result['groupId'],
-                            'phone': result['phone'],
-                            'is_approved': true,
-                            'head_teacher_username':
-                                widget.userData['username'],
-                          };
-
-                          // Yangi team lead ni username bilan document ID sifatida qo'shish
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(newUsername)
-                              .set(teamLeadData);
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Team Lead muvaffaqiyatli qo\'shildi'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Xatolik yuz berdi: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text(
-                    'Team Lead qilish',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-            );
+                );
+              }
+            }
           },
         );
       },
+    );
+  }
+}
+
+class _StudentSearchList extends StatefulWidget {
+  final List<QueryDocumentSnapshot> students;
+  final Function(Map<String, dynamic>) onStudentSelected;
+
+  const _StudentSearchList({
+    Key? key,
+    required this.students,
+    required this.onStudentSelected,
+  }) : super(key: key);
+
+  @override
+  State<_StudentSearchList> createState() => _StudentSearchListState();
+}
+
+class _StudentSearchListState extends State<_StudentSearchList> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Ism, username yoki telefon bo\'yicha qidirish...',
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF512D84)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: widget.students.length,
+            itemBuilder: (context, index) {
+              final student = widget.students[index].data() as Map<String, dynamic>;
+              final fullName = (student['full_name'] ?? '').toString().toLowerCase();
+              final username = (student['username'] ?? '').toString().toLowerCase();
+              final phone = (student['phone'] ?? student['father_phone'] ?? '').toString().toLowerCase();
+
+              if (_searchQuery.isNotEmpty &&
+                  !fullName.contains(_searchQuery) &&
+                  !username.contains(_searchQuery) &&
+                  !phone.contains(_searchQuery)) {
+                return const SizedBox.shrink();
+              }
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: const Icon(Icons.person_outline, color: Color(0xFF512DA8)),
+                  title: Text(
+                    student['full_name'] ?? 'Nomsiz',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('@${student['username'] ?? ''}'),
+                      Text('Tel: ${student['phone'] == 'N/A' || student['phone'] == null ? student['father_phone'] ?? 'N/A' : student['phone']}'),
+                      Text('Region: ${student['region'] ?? 'N/A'}'),
+                    ],
+                  ),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF512DA8),
+                    ),
+                    onPressed: () => widget.onStudentSelected(student),
+                    child: const Text(
+                      'Team Lead qilish',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

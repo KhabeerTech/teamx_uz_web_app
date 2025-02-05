@@ -40,6 +40,8 @@ class AdminPage extends StatefulWidget {
 class _AdminPageState extends State<AdminPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final _startDateController = TextEditingController();
+  final _searchController = TextEditingController(); // Qidiruv uchun controller
+  String _searchQuery = ''; // Qidiruv so'rovi
   Map<String, bool> _selectedDays = {
     'dushanba': false,
     'seshanba': false,
@@ -48,6 +50,7 @@ class _AdminPageState extends State<AdminPage> {
     'juma': false,
     'shanba': false,
   };
+  String _selectedFilter = 'all'; // Yangi filter state
 
   Future<void> _updateUserCase(String username, String newCase) async {
     try {
@@ -608,51 +611,56 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: TweenAnimationBuilder(
-        duration: const Duration(seconds: 1),
-        tween: Tween<double>(begin: 0, end: 1),
-        builder: (context, double animValue, child) {
-          return Transform.rotate(
-            angle: animValue * 2 * 3.14159,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: animValue * 2,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    icon,
-                    color: color,
-                    size: 30,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    value,
-                    style: TextStyle(fontSize: 24, color: color),
-                  ),
-                ],
-              ),
-            ),
-          );
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return SizedBox(
+      width: 200, // Barcha cardlar uchun bir xil width
+      height: 150, // Barcha cardlar uchun bir xil height
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (title == 'Jami o\'quvchilar') {
+              _selectedFilter = 'all';
+            } else if (title == 'Tasdiqlangan') {
+              _selectedFilter = 'approved';
+            } else if (title == 'Kutilmoqda') {
+              _selectedFilter = 'pending';
+            }
+          });
         },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: (_selectedFilter == 'all' && title == 'Jami o\'quvchilar') ||
+                   (_selectedFilter == 'approved' && title == 'Tasdiqlangan') ||
+                   (_selectedFilter == 'pending' && title == 'Kutilmoqda')
+                ? color 
+                : color.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 32),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -736,23 +744,23 @@ class _AdminPageState extends State<AdminPage> {
               );
             },
           ),
-          _buildMenuItem(
-            icon: Icons.add_circle,
-            title: 'Kurs qo\'shish',
-            isSelected: false,
-            isSmallScreen: !isDrawer && isSmallScreen,
-            onTap: () {
-              if (isSmallScreen) {
-                Navigator.pop(context); // Drawer'ni yopish
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CourseDetailsPage(),
-                ),
-              );
-            },
-          ),
+          // _buildMenuItem(
+          //   icon: Icons.add_circle,
+          //   title: 'Kurs qo\'shish',
+          //   isSelected: false,
+          //   isSmallScreen: !isDrawer && isSmallScreen,
+          //   onTap: () {
+          //     if (isSmallScreen) {
+          //       Navigator.pop(context); // Drawer'ni yopish
+          //     }
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => const CourseDetailsPage(),
+          //       ),
+          //     );
+          //   },
+          // ),
           _buildMenuItem(
             icon: Icons.supervisor_account,
             title: 'Team Lead',
@@ -982,288 +990,333 @@ class _AdminPageState extends State<AdminPage> {
                                         ),
                                       ],
                                     ),
-                                    child: ListView.builder(
-                                      itemCount: filteredDocs.length,
-                                      itemBuilder: (context, index) {
-                                        final doc = filteredDocs[index];
-                                        final data =
-                                            doc.data() as Map<String, dynamic>;
-                                        final username =
-                                            data['username'] ?? 'Noma\'lum';
-                                        final fullName =
-                                            data['full_name'] ?? 'Noma\'lum';
-                                        final userCase = data['case'] ?? 'no';
-
-                                        return Container(
-                                          decoration: BoxDecoration(
-                                            color: data['3daystest'] == true
-                                                ? Colors.yellow[100]
-                                                : null,
-                                            border: Border(
-                                              bottom: BorderSide(
-                                                color: Colors.grey
-                                                    .withOpacity(0.2),
+                                    child: Column(
+                                      children: [
+                                        // Qidiruv maydoni
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: TextField(
+                                            controller: _searchController,
+                                            decoration: InputDecoration(
+                                              hintText: 'O\'quvchi ismini yoki usernameni kiriting...',
+                                              prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                                borderSide: const BorderSide(color: Color(0xFF512D84)),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                                borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
                                               ),
                                             ),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _searchQuery = value;
+                                              });
+                                            },
                                           ),
-                                          child: ListTile(
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: 20,
-                                              vertical: 10,
-                                            ),
-                                            leading: CircleAvatar(
-                                              backgroundColor:
-                                                  const Color(0xFF512D84)
-                                                      .withOpacity(0.1),
-                                              child: Text(
-                                                username[0].toUpperCase(),
-                                                style: const TextStyle(
-                                                  color: Color(0xFF512D84),
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            title: Text(
-                                              fullName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            subtitle: Text(username),
-                                            trailing: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: data['3daystest'] ==
-                                                            true
-                                                        ? const Color(
-                                                                0xFF512D84)
-                                                            .withOpacity(0.1)
-                                                        : userCase == 'yes'
-                                                            ? Colors.green
-                                                                .withOpacity(
-                                                                    0.1)
-                                                            : Colors.orange
-                                                                .withOpacity(
-                                                                    0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                    border: Border.all(
-                                                      color:
-                                                          data['3daystest'] ==
-                                                                  true
-                                                              ? const Color(
-                                                                  0xFF512D84)
-                                                              : userCase ==
-                                                                      'yes'
-                                                                  ? Colors.green
-                                                                  : Colors
-                                                                      .orange,
-                                                      width: 0.5,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    data['3daystest'] == true
-                                                        ? '3 kunlik sinovdan o\'tdi'
-                                                        : userCase == 'yes'
-                                                            ? 'Tasdiqlangan'
-                                                            : 'Kutilmoqda',
-                                                    style: TextStyle(
-                                                      color:
-                                                          data['3daystest'] ==
-                                                                  true
-                                                              ? const Color(
-                                                                  0xFF512D84)
-                                                              : userCase ==
-                                                                      'yes'
-                                                                  ? Colors.green
-                                                                  : Colors
-                                                                      .orange,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w500,
+                                        ),
+                                        // ListView
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: filteredDocs.length,
+                                            itemBuilder: (context, index) {
+                                              final doc = filteredDocs[index];
+                                              final data = doc.data() as Map<String, dynamic>;
+                                              final username = data['username']?.toString() ?? '';
+                                              final fullName = data['full_name']?.toString() ?? '';
+                                              
+                                              // Filter students based on selection
+                                              if (_selectedFilter == 'approved' && data['case'] != 'yes') {
+                                                return const SizedBox.shrink();
+                                              }
+                                              if (_selectedFilter == 'pending' && data['case'] == 'yes') {
+                                                return const SizedBox.shrink();
+                                              }
+
+                                              // Qidiruv filtri
+                                              if (_searchQuery.isNotEmpty &&
+                                                  !username.contains(_searchQuery) &&
+                                                  !fullName.contains(_searchQuery)) {
+                                                return const SizedBox.shrink();
+                                              }
+                                              
+                                              return Container(
+                                                decoration: BoxDecoration(
+                                                  color: data['3daystest'] == true
+                                                      ? Colors.yellow[100]
+                                                      : null,
+                                                  border: Border(
+                                                    bottom: BorderSide(
+                                                      color: Colors.grey
+                                                          .withOpacity(0.2),
                                                     ),
                                                   ),
                                                 ),
-                                                const SizedBox(width: 10),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.more_vert,
-                                                    color: Colors.grey,
+                                                child: ListTile(
+                                                  contentPadding:
+                                                      const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                    vertical: 10,
                                                   ),
-                                                  onPressed: () {
-                                                    showDialog(
-                                                      context: context,
-                                                      builder: (context) =>
-                                                          Dialog(
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(15),
+                                                  leading: CircleAvatar(
+                                                    backgroundColor:
+                                                        const Color(0xFF512D84)
+                                                            .withOpacity(0.1),
+                                                    child: Text(
+                                                      username[0].toUpperCase(),
+                                                      style: const TextStyle(
+                                                        color: Color(0xFF512D84),
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  title: Text(
+                                                    fullName,
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  subtitle: Text(username),
+                                                  trailing: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 6,
                                                         ),
-                                                        child: Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(20),
-                                                          child: Column(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              ListTile(
-                                                                leading:
-                                                                    const Icon(
-                                                                  Icons.edit,
-                                                                  color: Color(
-                                                                      0xFF512D84),
-                                                                ),
-                                                                title: const Text(
-                                                                    'Tahrirlash'),
-                                                                onTap: () {
-                                                                  Navigator.pop(
-                                                                      context);
-                                                                  _editUserData(
-                                                                      username,
-                                                                      data);
-                                                                },
-                                                              ),
-                                                              ListTile(
-                                                                leading: Icon(
-                                                                  userCase ==
-                                                                          'yes'
-                                                                      ? Icons
-                                                                          .close
-                                                                      : data['3daystest'] ==
-                                                                              true
-                                                                          ? Icons
-                                                                              .check_circle
-                                                                          : Icons
-                                                                              .check,
-                                                                  color: userCase ==
-                                                                          'yes'
-                                                                      ? Colors
-                                                                          .red
-                                                                      : data['3daystest'] ==
-                                                                              true
-                                                                          ? const Color(
-                                                                              0xFF512D84)
-                                                                          : Colors
-                                                                              .green,
-                                                                ),
-                                                                title: Text(
-                                                                  userCase ==
-                                                                          'yes'
-                                                                      ? 'Rad etish'
-                                                                      : data['3daystest'] ==
-                                                                              true
-                                                                          ? '3 kunlik sinovdan o\'tdi'
-                                                                          : 'Tasdiqlash',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    color: userCase ==
+                                                        decoration: BoxDecoration(
+                                                          color: data['3daystest'] ==
+                                                                  true
+                                                              ? const Color(
+                                                                      0xFF512D84)
+                                                                  .withOpacity(0.1)
+                                                              : data['case'] ==
+                                                                      'yes'
+                                                                  ? Colors.green
+                                                                      .withOpacity(
+                                                                          0.1)
+                                                                  : Colors.orange
+                                                                      .withOpacity(
+                                                                          0.1),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                  20),
+                                                          border: Border.all(
+                                                            color:
+                                                                data['3daystest'] ==
+                                                                        true
+                                                                    ? const Color(
+                                                                        0xFF512D84)
+                                                                    : data['case'] ==
                                                                             'yes'
-                                                                        ? Colors
-                                                                            .red
-                                                                        : data['3daystest'] ==
-                                                                                true
-                                                                            ? const Color(0xFF512D84)
-                                                                            : Colors.green,
-                                                                  ),
-                                                                ),
-                                                                onTap:
-                                                                    () async {
-                                                                  Navigator.pop(
-                                                                      context);
-                                                                  if (userCase ==
-                                                                      'yes') {
-                                                                    _updateUserCase(
-                                                                        username,
-                                                                        'no');
-                                                                  } else {
-                                                                    if (data[
-                                                                            '3daystest'] ==
-                                                                        true) {
-                                                                      // Username bo'yicha userni topish
-                                                                      final userQuery = await _firestore
-                                                                          .collection(
-                                                                              'users')
-                                                                          .where(
-                                                                              'username',
-                                                                              isEqualTo: username)
-                                                                          .get();
-
-                                                                      if (userQuery
-                                                                          .docs
-                                                                          .isEmpty) {
-                                                                        if (!mounted)
-                                                                          return;
-                                                                        ScaffoldMessenger.of(context)
-                                                                            .showSnackBar(
-                                                                          const SnackBar(
-                                                                            content:
-                                                                                Text('Foydalanuvchi topilmadi'),
-                                                                            backgroundColor:
-                                                                                Colors.red,
-                                                                          ),
-                                                                        );
-                                                                        return;
-                                                                      }
-
-                                                                      // 3 kunlik sinovdan o'tgan o'quvchini tasdiqlash
-                                                                      _confirmStudent(
-                                                                          username);
-                                                                    } else {
-                                                                      _approveStudentDialog(
-                                                                          username,
-                                                                          doc.id);
-                                                                    }
-                                                                  }
-                                                                },
-                                                              ),
-                                                              ListTile(
-                                                                leading:
-                                                                    const Icon(
-                                                                  Icons.delete,
-                                                                  color: Colors
-                                                                      .red,
-                                                                ),
-                                                                title:
-                                                                    const Text(
-                                                                  'O\'chirish',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    color: Colors
-                                                                        .red,
-                                                                  ),
-                                                                ),
-                                                                onTap: () {
-                                                                  Navigator.pop(
-                                                                      context);
-                                                                  _confirmDeleteUser(
-                                                                      username);
-                                                                },
-                                                              ),
-                                                            ],
+                                                                        ? Colors.green
+                                                                        : Colors
+                                                                            .orange,
+                                                            width: 0.5,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          data['3daystest'] == true
+                                                              ? '3 kunlik sinovdan o\'tdi'
+                                                              : data['case'] ==
+                                                                      'yes'
+                                                                  ? 'Tasdiqlangan'
+                                                                  : 'Kutilmoqda',
+                                                          style: TextStyle(
+                                                            color:
+                                                                data['3daystest'] ==
+                                                                        true
+                                                                    ? const Color(
+                                                                        0xFF512D84)
+                                                                    : data['case'] ==
+                                                                            'yes'
+                                                                        ? Colors.green
+                                                                        : Colors
+                                                                            .orange,
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w500,
                                                           ),
                                                         ),
                                                       ),
-                                                    );
-                                                  },
+                                                      const SizedBox(width: 10),
+                                                      IconButton(
+                                                        icon: const Icon(
+                                                          Icons.more_vert,
+                                                          color: Colors.grey,
+                                                        ),
+                                                        onPressed: () {
+                                                          showDialog(
+                                                            context: context,
+                                                            builder: (context) =>
+                                                                Dialog(
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(15),
+                                                              ),
+                                                              child: Container(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(20),
+                                                                child: Column(
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .min,
+                                                                  children: [
+                                                                    ListTile(
+                                                                      leading:
+                                                                          const Icon(
+                                                                        Icons.edit,
+                                                                        color: Color(
+                                                                            0xFF512D84),
+                                                                      ),
+                                                                      title: const Text(
+                                                                          'Tahrirlash'),
+                                                                      onTap: () {
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                        _editUserData(
+                                                                            username,
+                                                                            data);
+                                                                      },
+                                                                    ),
+                                                                    ListTile(
+                                                                      leading: Icon(
+                                                                        data['case'] ==
+                                                                                'yes'
+                                                                            ? Icons
+                                                                                .close
+                                                                            : data['3daystest'] ==
+                                                                                    true
+                                                                                ? Icons
+                                                                                    .check_circle
+                                                                                : Icons
+                                                                                    .check,
+                                                                        color: data['case'] ==
+                                                                                'yes'
+                                                                            ? Colors
+                                                                                .red
+                                                                            : data['3daystest'] ==
+                                                                                    true
+                                                                                ? const Color(
+                                                                                    0xFF512D84)
+                                                                                : Colors.green,
+                                                                      ),
+                                                                      title: Text(
+                                                                        data['case'] ==
+                                                                                'yes'
+                                                                            ? 'Rad etish'
+                                                                            : data['3daystest'] ==
+                                                                                    true
+                                                                                ? '3 kunlik sinovdan o\'tdi'
+                                                                                : 'Tasdiqlash',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: data['case'] ==
+                                                                                  'yes'
+                                                                              ? Colors
+                                                                                  .red
+                                                                              : data['3daystest'] ==
+                                                                                      true
+                                                                                  ? const Color(
+                                                                                      0xFF512D84)
+                                                                                  : Colors.green,
+                                                                        ),
+                                                                      ),
+                                                                      onTap:
+                                                                          () async {
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                        if (data['case'] ==
+                                                                            'yes') {
+                                                                          _updateUserCase(
+                                                                              username,
+                                                                              'no');
+                                                                        } else {
+                                                                          if (data[
+                                                                                  '3daystest'] ==
+                                                                              true) {
+                                                                            // Username bo'yicha userni topish
+                                                                            final userQuery = await _firestore
+                                                                                .collection(
+                                                                                    'users')
+                                                                                .where(
+                                                                                    'username',
+                                                                                    isEqualTo: username)
+                                                                                .get();
+
+                                                                            if (userQuery
+                                                                                .docs
+                                                                                .isEmpty) {
+                                                                              if (!mounted)
+                                                                                return;
+                                                                              ScaffoldMessenger.of(context)
+                                                                                  .showSnackBar(
+                                                                                const SnackBar(
+                                                                                  content: Text(
+                                                                                      'Foydalanuvchi topilmadi'),
+                                                                                  backgroundColor:
+                                                                                      Colors.red,
+                                                                                ),
+                                                                              );
+                                                                              return;
+                                                                            }
+
+                                                                            // 3 kunlik sinovdan o'tgan o'quvchini tasdiqlash
+                                                                            _confirmStudent(
+                                                                                username);
+                                                                          } else {
+                                                                            _approveStudentDialog(
+                                                                                username,
+                                                                                doc.id);
+                                                                          }
+                                                                        }
+                                                                      },
+                                                                    ),
+                                                                    ListTile(
+                                                                      leading:
+                                                                          const Icon(
+                                                                        Icons.delete,
+                                                                        color: Colors
+                                                                            .red,
+                                                                      ),
+                                                                      title:
+                                                                          const Text(
+                                                                        'O\'chirish',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: Colors
+                                                                              .red,
+                                                                        ),
+                                                                      ),
+                                                                      onTap: () {
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                        _confirmDeleteUser(
+                                                                            username);
+                                                                      },
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                              
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      ],
                                     ),
                                   ),
                                 ),

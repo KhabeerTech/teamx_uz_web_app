@@ -9,9 +9,12 @@ import 'package:teamx_uz_web_app/admins/admin_page.dart';
 import 'package:teamx_uz_web_app/team_leads/team_lead_home_page.dart';
 import 'package:teamx_uz_web_app/head_teacher/head_teacher_page.dart';
 import 'package:teamx_uz_web_app/pages/sing_In_wait.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:html' as html;
 
 final TextEditingController _usernameController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
+bool _obscureText = true;
 
 InputDecoration inputDecoration(String labelText) {
   // Ekran o'lchamini olish
@@ -71,12 +74,37 @@ class _SignIn_usernameState extends State<SignIn_username>
       if (!mounted) return;
 
       if (userDoc.exists) {
-        final userData = userDoc.data() as Map<String, dynamic>;
-        print('User Data: $userData'); // Debug
+        final userData = userDoc.data();
+        if (userData == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Foydalanuvchi ma\'lumotlarini olishda xatolik! Iltimos qaytadan urinib ko\'ring.',
+                style: TextStyle(fontSize: 16),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
 
         if (userData['password'] == _passwordController.text) {
           print('Password matched'); // Debug
           print('User Type: ${userData['role']}'); // Debug
+
+          try {
+            // Username va parolni saqlash
+            html.window.localStorage['username'] = _usernameController.text;
+            html.window.localStorage['password'] = _passwordController.text;
+            html.window.localStorage['user_role'] = userData['role'];
+          } catch (e) {
+            print('localStorage error: $e');
+          }
 
           // Student uchun case tekshirish
           if (userData['role'] != 'admin' &&
@@ -151,6 +179,7 @@ class _SignIn_usernameState extends State<SignIn_username>
               MaterialPageRoute(
                 builder: (context) => StudentPage(
                   username: _usernameController.text,
+                  userData: userData,
                 ),
               ),
             );
@@ -181,10 +210,14 @@ class _SignIn_usernameState extends State<SignIn_username>
       print("Firestore xatosi: $e"); // Debug uchun
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Xatolik yuz berdi. Qaytadan urinib ko\'ring'),
+        SnackBar(
+          content: Text(
+            'Internet aloqasi yo\'q yoki serverda xatolik yuz berdi!\n\nXatolik: ${e.toString()}\n\nIltimos internet aloqangizni tekshiring va qaytadan urinib ko\'ring.',
+            style: const TextStyle(fontSize: 16),
+          ),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -361,9 +394,7 @@ class _SignIn_usernameState extends State<SignIn_username>
                       children: [
                         TextFormField(
                           controller: _usernameController,
-                          decoration: inputDecoration(
-                            "Username",
-                          ).copyWith(
+                          decoration: inputDecoration("Username").copyWith(
                             labelStyle: const TextStyle(
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF512D84),
@@ -394,6 +425,17 @@ class _SignIn_usernameState extends State<SignIn_username>
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF512D84),
                             ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureText ? Icons.visibility_off : Icons.visibility,
+                                color: const Color(0xFF512D84),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureText = !_obscureText;
+                                });
+                              },
+                            ),
                           ),
                           style: const TextStyle(
                             color: Color(0xFF512D84),
@@ -406,7 +448,7 @@ class _SignIn_usernameState extends State<SignIn_username>
                               FocusScope.of(context).unfocus();
                             }
                           },
-                          obscureText: true,
+                          obscureText: _obscureText,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Parolni kiriting';

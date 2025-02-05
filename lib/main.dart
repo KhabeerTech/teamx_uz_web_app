@@ -1,18 +1,39 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:teamx_uz_web_app/firebase_options.dart';
 import 'package:teamx_uz_web_app/pages/onboard.dart';
+import 'package:teamx_uz_web_app/pages/student_page.dart';
+import 'package:teamx_uz_web_app/admins/admin_page.dart';
+import 'package:teamx_uz_web_app/team_leads/team_lead_home_page.dart';
+// import 'package:teamx_uz_web_app/headimport 'package:firebase_core/firebase_core.dart';
+
+// import 'dart:html' as html;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
+   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  
+  try {
+    print('Initializing Firebase...'); // Debug print
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully'); // Debug print
+  } catch (e) {
+    print('Error initializing Firebase: $e'); // Debug print
+    // Firebase initializatsiya xatosi bo'lsa ham davom etamiz
+  }
+
+  runApp(const MyApp(homePage: OnboardPages()));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Widget homePage;
+  
+  const MyApp({super.key, required this.homePage});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +43,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const OnboardPages(),
+      home: homePage,
       debugShowCheckedModeBanner: false,
     );
   }

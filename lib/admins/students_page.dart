@@ -2,8 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'student_details_page.dart';
 
-class StudentsPage extends StatelessWidget {
+class StudentsPage extends StatefulWidget {
   const StudentsPage({super.key});
+
+  @override
+  State<StudentsPage> createState() => _StudentsPageState();
+}
+
+class _StudentsPageState extends State<StudentsPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +37,38 @@ class StudentsPage extends StatelessWidget {
         backgroundColor: const Color(0xFF512D84),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _buildUserList(),
+      body: Column(
+        children: [
+          // Qidiruv maydoni
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'O\'quvchi ismini yoki usernameni kiriting...',
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF512D84)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+            ),
+          ),
+          // O'quvchilar ro'yxati
+          Expanded(
+            child: _buildUserList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -43,15 +88,25 @@ class StudentsPage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
+        final docs = snapshot.data!.docs;
+        final filteredDocs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final username = (data['username'] ?? '').toString().toLowerCase();
+          final fullName = (data['full_name'] ?? '').toString().toLowerCase();
+          
+          return _searchQuery.isEmpty || 
+                 username.contains(_searchQuery) || 
+                 fullName.contains(_searchQuery);
+        }).toList();
+
         return ListView.builder(
           padding: EdgeInsets.symmetric(
             horizontal: MediaQuery.of(context).size.width < 600 ? 12 : 16,
             vertical: MediaQuery.of(context).size.width < 600 ? 8 : 12,
           ),
-          itemCount: snapshot.data!.docs.length,
+          itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
-            final userData =
-                snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            final userData = filteredDocs[index].data() as Map<String, dynamic>;
             return Container(
               margin: EdgeInsets.only(
                   bottom: MediaQuery.of(context).size.width < 600 ? 8 : 12),

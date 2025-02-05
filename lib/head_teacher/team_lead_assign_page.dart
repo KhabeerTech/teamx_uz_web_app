@@ -20,11 +20,19 @@ class _TeamLeadAssignPageState extends State<TeamLeadAssignPage> {
   List<Map<String, dynamic>> _students = [];
   List<Map<String, dynamic>> _assignedStudents = [];
   bool _isLoading = true;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -241,28 +249,107 @@ class _TeamLeadAssignPageState extends State<TeamLeadAssignPage> {
                           child: TabBarView(
                             children: [
                               // Available students tab
-                              _students.isEmpty
-                                  ? const Center(
-                                      child: Text('O\'quvchilar topilmadi'))
-                                  : ListView.builder(
-                                      itemCount: _students.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildStudentCard(
-                                            _students[index], false);
+                              Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: TextField(
+                                      controller: _searchController,
+                                      decoration: InputDecoration(
+                                        hintText: 'Ism, username yoki telefon bo\'yicha qidirish...',
+                                        prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: const BorderSide(color: Color(0xFF512D84)),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
+                                        ),
+                                      ),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _searchQuery = value.toLowerCase();
+                                        });
                                       },
                                     ),
+                                  ),
+                                  Expanded(
+                                    child: _students.isEmpty
+                                      ? const Center(
+                                          child: Text('O\'quvchilar topilmadi'))
+                                      : ListView.builder(
+                                          itemCount: _students.length,
+                                          itemBuilder: (context, index) {
+                                            final student = _students[index];
+                                            final fullName = (student['full_name'] ?? '').toString().toLowerCase();
+                                            final username = (student['username'] ?? '').toString().toLowerCase();
+                                            final phone = (student['phone'] ?? student['father_phone'] ?? '').toString().toLowerCase();
+
+                                            if (_searchQuery.isNotEmpty &&
+                                                !fullName.contains(_searchQuery) &&
+                                                !username.contains(_searchQuery) &&
+                                                !phone.contains(_searchQuery)) {
+                                              return const SizedBox.shrink();
+                                            }
+
+                                            return _buildStudentCard(student, false);
+                                          },
+                                        ),
+                                  ),
+                                ],
+                              ),
                               // Assigned students tab
-                              _assignedStudents.isEmpty
-                                  ? const Center(
-                                      child: Text(
-                                          'Biriktirilgan o\'quvchilar yo\'q'))
-                                  : ListView.builder(
-                                      itemCount: _assignedStudents.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildStudentCard(
-                                            _assignedStudents[index], true);
+                              Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: TextField(
+                                      controller: _searchController,
+                                      decoration: InputDecoration(
+                                        hintText: 'Ism, username yoki telefon bo\'yicha qidirish...',
+                                        prefixIcon: const Icon(Icons.search, color: Color(0xFF512D84)),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: const BorderSide(color: Color(0xFF512D84)),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: const BorderSide(color: Color(0xFF512D84), width: 2),
+                                        ),
+                                      ),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _searchQuery = value.toLowerCase();
+                                        });
                                       },
                                     ),
+                                  ),
+                                  Expanded(
+                                    child: _assignedStudents.isEmpty
+                                      ? const Center(
+                                          child: Text('Biriktirilgan o\'quvchilar yo\'q'))
+                                      : ListView.builder(
+                                          itemCount: _assignedStudents.length,
+                                          itemBuilder: (context, index) {
+                                            final student = _assignedStudents[index];
+                                            final fullName = (student['full_name'] ?? '').toString().toLowerCase();
+                                            final username = (student['username'] ?? '').toString().toLowerCase();
+                                            final phone = (student['phone'] ?? student['father_phone'] ?? '').toString().toLowerCase();
+
+                                            if (_searchQuery.isNotEmpty &&
+                                                !fullName.contains(_searchQuery) &&
+                                                !username.contains(_searchQuery) &&
+                                                !phone.contains(_searchQuery)) {
+                                              return const SizedBox.shrink();
+                                            }
+
+                                            return _buildStudentCard(student, true);
+                                          },
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
