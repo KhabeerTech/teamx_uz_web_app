@@ -336,7 +336,7 @@ class _MyStudentsPageState extends State<MyStudentsPage> {
                                         border: Border.all(
                                           color: Colors.grey.withOpacity(0.5),
                                           width: MediaQuery.of(context)
-                                                        .size
+                                                      .size
                                                       .width <
                                                   600
                                               ? 1
