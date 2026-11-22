@@ -1,16 +1,15 @@
-# teamx_uz_web_app
+# Education Management System
 
-A new Flutter project.
+An open-source CRM for educational centers.
 
-## Getting Started
+## Features
+- Role-based access: students, teachers, managers and team leaders
+- Student attendance tracking
+- Payment history and status
+- User authentication
 
-This project is a starting point for a Flutter application.
+## Installation
+Add installation instructions here.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## License
+See LICENSE.
